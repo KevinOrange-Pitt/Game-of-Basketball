@@ -1,0 +1,29 @@
+TO RUN
+
+cd '/Users/kevinorange/Downloads/Software Engineering/Maui'
+./run-dev.sh
+
+
+TO CONNECT AZURE SQL
+In the API config:
+1) Open GobTrackerApi/appsettings.Development.json
+2) Keep both connection strings configured:
+	- SqlDatabaseDefault (Active Directory Default)
+	- SqlDatabaseInteractive (Active Directory Interactive)
+3) Optional (recommended to reduce prompts): install Azure CLI and run az login before demo
+4) Start the API first
+5) In the app click "Show Players"
+6) The app calls http://localhost:5117/api/players and displays Id, PlayerName, Team, Points
+7) If Default auth has no token source, API falls back to Interactive sign-in
+
+
+MILESTONE 1 CHECK
+- MAUI app calls local API
+- API reads from cloud SQL db
+- MAUI displays records on screen
+
+
+
+
+TO KILL
+pkill -f MauiApp1
