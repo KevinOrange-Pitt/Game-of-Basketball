@@ -6,7 +6,7 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 API_PROJECT="$ROOT_DIR/GobTrackerApi/GobTrackerApi.csproj"
 MAUI_PROJECT="$ROOT_DIR/MauiApp1/MauiApp1.csproj"
 API_SETTINGS="$ROOT_DIR/GobTrackerApi/appsettings.Development.json"
-API_HEALTH_URL="http://localhost:5117/api/health"
+API_HEALTH_URL="http://127.0.0.1:5117/api/health"
 
 cd "$ROOT_DIR"
 
@@ -16,7 +16,7 @@ if grep -q "<sql-user>\|<sql-password>\|{your_username}\|{your_password}" "$API_
 fi
 
 echo "Starting local API..."
-dotnet run --project "$API_PROJECT" >/tmp/gobtracker-api.log 2>&1 &
+ASPNETCORE_ENVIRONMENT="Development" ASPNETCORE_URLS="http://127.0.0.1:5117" dotnet run --project "$API_PROJECT" >/tmp/gobtracker-api.log 2>&1 &
 API_PID=$!
 
 cleanup() {
@@ -45,7 +45,7 @@ fi
 echo "Starting MAUI app..."
 dotnet run --project "$MAUI_PROJECT" -f net10.0-maccatalyst
 
-echo "MAUI launched. API is still running on http://localhost:5117"
+echo "MAUI launched. API is still running on http://127.0.0.1:5117"
 echo "Press Ctrl+C in this terminal to stop the API."
 while ps -p "$API_PID" >/dev/null 2>&1; do
   sleep 1

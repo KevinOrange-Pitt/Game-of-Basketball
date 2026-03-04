@@ -1,6 +1,4 @@
-<<<<<<< HEAD
 # Game-of-Basketball
-=======
 macOS: ./run-dev.sh
 - Starts local API, waits for health, then launches MAUI app.
 
@@ -30,4 +28,3 @@ az login
 dotnet --version
 dotnet workload list
 ```
->>>>>>> f93a772 (Initial GOB tracker setup (MAUI + API + run scripts))

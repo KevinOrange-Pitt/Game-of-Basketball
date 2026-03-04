@@ -13,7 +13,7 @@ public partial class MainPage : ContentPage
 	{
 		_databaseService = new DatabaseService(new HttpClient
 		{
-			BaseAddress = new Uri("http://localhost:5117/")
+			BaseAddress = new Uri("http://127.0.0.1:5117/")
 		});
 		InitializeComponent();
 		BindingContext = this;

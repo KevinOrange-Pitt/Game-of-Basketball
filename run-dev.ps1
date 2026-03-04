@@ -4,7 +4,7 @@ $rootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $apiProject = Join-Path $rootDir 'GobTrackerApi\GobTrackerApi.csproj'
 $mauiProject = Join-Path $rootDir 'MauiApp1\MauiApp1.csproj'
 $apiSettings = Join-Path $rootDir 'GobTrackerApi\appsettings.Development.json'
-$apiHealthUrl = 'http://localhost:5117/api/health'
+$apiHealthUrl = 'http://127.0.0.1:5117/api/health'
 
 Set-Location $rootDir
 
@@ -15,7 +15,8 @@ if ($configContent -match '<sql-user>|<sql-password>|\{your_username\}|\{your_pa
 }
 
 Write-Host 'Starting local API...'
-$apiProcess = Start-Process -FilePath dotnet -ArgumentList @('run', '--project', $apiProject) -PassThru -WindowStyle Hidden
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
+$apiProcess = Start-Process -FilePath dotnet -ArgumentList @('run', '--project', $apiProject, '--urls', 'http://127.0.0.1:5117') -PassThru -WindowStyle Hidden
 
 function Stop-Api {
     if ($null -ne $apiProcess -and -not $apiProcess.HasExited) {
@@ -41,7 +42,7 @@ try {
     }
 
     if (-not $apiReady) {
-        Write-Host 'API failed to start on http://localhost:5117.'
+        Write-Host 'API failed to start on http://127.0.0.1:5117.'
         exit 1
     }
 
