@@ -8,9 +8,14 @@ $apiHealthUrl = 'http://127.0.0.1:5117/api/health'
 
 Set-Location $rootDir
 
-$configContent = Get-Content $apiSettings -Raw
-if ($configContent -match '<sql-user>|<sql-password>|\{your_username\}|\{your_password\}') {
-    Write-Host 'Update GobTrackerApi\appsettings.Development.json with real auth settings before running.'
+if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
+    Write-Host 'Azure CLI is not installed. Install it, then run: az login'
+    exit 1
+}
+
+az account show | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host 'Azure login is required for Active Directory auth. Run: az login'
     exit 1
 }
 

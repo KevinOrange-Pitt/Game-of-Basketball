@@ -18,43 +18,132 @@ app.UseCors();
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
 
-app.MapGet("/api/players", async (IConfiguration config) =>
+app.MapGet("/api/db-health", async (IConfiguration config) =>
 {
-	var defaultConnectionString = config.GetConnectionString("SqlDatabaseDefault");
-	var interactiveConnectionString = config.GetConnectionString("SqlDatabaseInteractive");
+	var result = await TryLoadSinglePlayerWithFallbackAsync(config);
 
-	if (string.IsNullOrWhiteSpace(defaultConnectionString) || string.IsNullOrWhiteSpace(interactiveConnectionString))
+	if (result.Attempts.Count == 0)
 	{
-		return Results.Problem("Connection strings 'SqlDatabaseDefault' and 'SqlDatabaseInteractive' must be configured.");
+		return Results.Problem(
+			title: "Database configuration missing",
+			detail: "Configure at least one connection string: SqlDatabase, SqlDatabaseInteractive, or SqlDatabaseSqlAuth.",
+			statusCode: StatusCodes.Status500InternalServerError);
 	}
 
-	try
+	if (result.SucceededConnection is not null)
 	{
-		var players = await LoadPlayersAsync(defaultConnectionString);
-		return Results.Ok(players);
+		return Results.Ok(new
+		{
+			status = "ok",
+			connection = result.SucceededConnection,
+			hasRecord = result.Player is not null
+		});
 	}
-	catch (Exception ex) when (ex.Message.Contains("DefaultAzureCredential failed", StringComparison.OrdinalIgnoreCase))
+
+	return Results.Problem(
+		title: "Database connection failed",
+		detail: BuildAttemptsDetail(result.Attempts),
+		statusCode: StatusCodes.Status503ServiceUnavailable);
+});
+
+app.MapGet("/api/milestone-record", async (IConfiguration config) =>
+{
+	var result = await TryLoadSinglePlayerWithFallbackAsync(config);
+
+	if (result.Attempts.Count == 0)
 	{
-		var players = await LoadPlayersAsync(interactiveConnectionString);
-		return Results.Ok(players);
+		return Results.Problem(
+			title: "Database configuration missing",
+			detail: "Configure at least one connection string: SqlDatabase, SqlDatabaseInteractive, or SqlDatabaseSqlAuth.",
+			statusCode: StatusCodes.Status500InternalServerError);
 	}
-	catch (Exception ex)
+
+	if (result.SucceededConnection is null)
 	{
-		return Results.Problem($"Database query failed: {ex.Message}");
+		return Results.Problem(
+			title: "Database query failed",
+			detail: BuildAttemptsDetail(result.Attempts),
+			statusCode: StatusCodes.Status503ServiceUnavailable);
 	}
+
+	if (result.Player is null)
+	{
+		return Results.NotFound(new
+		{
+			message = "No records found in dbo.Players.",
+			connection = result.SucceededConnection
+		});
+	}
+
+	return Results.Ok(result.Player);
 });
 
 app.Run();
 
-static async Task<List<PlayerDto>> LoadPlayersAsync(string connectionString)
+static async Task<DbLoadResult> TryLoadSinglePlayerWithFallbackAsync(IConfiguration config)
 {
-	var players = new List<PlayerDto>();
+	var attempts = new List<ConnectionAttempt>();
 
+	foreach (var candidate in GetConnectionCandidates(config))
+	{
+		try
+		{
+			var player = await LoadSinglePlayerAsync(candidate.ConnectionString);
+			attempts.Add(new ConnectionAttempt(candidate.Name, true, null));
+			return new DbLoadResult(player, candidate.Name, attempts);
+		}
+		catch (Exception ex)
+		{
+			attempts.Add(new ConnectionAttempt(candidate.Name, false, ex.Message));
+		}
+	}
+
+	return new DbLoadResult(null, null, attempts);
+}
+
+static IEnumerable<ConnectionCandidate> GetConnectionCandidates(IConfiguration config)
+{
+	var keys = new[]
+	{
+		"SqlDatabase",
+		"SqlDatabaseInteractive",
+		"SqlDatabaseSqlAuth"
+	};
+
+	var seen = new HashSet<string>(StringComparer.Ordinal);
+
+	foreach (var key in keys)
+	{
+		var connectionString = config.GetConnectionString(key);
+		if (string.IsNullOrWhiteSpace(connectionString))
+		{
+			continue;
+		}
+
+		if (!seen.Add(connectionString))
+		{
+			continue;
+		}
+
+		yield return new ConnectionCandidate(key, connectionString);
+	}
+}
+
+static string BuildAttemptsDetail(IEnumerable<ConnectionAttempt> attempts)
+{
+	var lines = attempts.Select(attempt =>
+		$"{attempt.Name}: {(attempt.Success ? "Success" : $"Failed ({attempt.Error})")}");
+
+	return "Tried connection strings in order. " + string.Join(" | ", lines);
+}
+
+static async Task<PlayerDto?> LoadSinglePlayerAsync(string connectionString)
+{
 	await using var connection = new SqlConnection(connectionString);
 	await connection.OpenAsync();
 
 	const string sql = @"
-SELECT TOP (100)
+SELECT TOP (1)
 	Id,
 	PlayerName,
 	Team,
@@ -65,16 +154,19 @@ ORDER BY Id;";
 	await using var command = new SqlCommand(sql, connection);
 	await using var reader = await command.ExecuteReaderAsync();
 
-	while (await reader.ReadAsync())
+	if (await reader.ReadAsync())
 	{
-		players.Add(new PlayerDto(
+		return new PlayerDto(
 			reader.GetInt32(0),
 			reader.GetString(1),
 			reader.GetString(2),
-			reader.GetInt32(3)));
+			reader.GetInt32(3));
 	}
 
-	return players;
+	return null;
 }
 
+public record ConnectionCandidate(string Name, string ConnectionString);
+public record ConnectionAttempt(string Name, bool Success, string? Error);
+public record DbLoadResult(PlayerDto? Player, string? SucceededConnection, List<ConnectionAttempt> Attempts);
 public record PlayerDto(int Id, string PlayerName, string Team, int Points);

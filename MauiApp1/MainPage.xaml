@@ -4,34 +4,27 @@
              x:Class="MauiApp1.MainPage">
 
     <VerticalStackLayout
-        Padding="20"
-        Spacing="12">
+        Padding="24"
+        Spacing="14">
         <Label
-            Text="Azure SQL Viewer"
+            Text="MAUI Hello World"
             Style="{StaticResource Headline}" />
 
+        <Label
+            Text="Milestone 1: MAUI -> API -> SQL"
+            FontAttributes="Bold" />
+
+        <Label
+            Text="{Binding StatusMessage}" />
+
         <Button
-            Text="Show Players"
-            Clicked="OnShowDatabaseClicked"
+            Text="Load Milestone Record"
+            Clicked="OnLoadMilestoneClicked"
             HorizontalOptions="Fill" />
 
-        <CollectionView ItemsSource="{Binding Items}">
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Grid ColumnDefinitions="50,*,*,70" Padding="0,8">
-                        <Label Grid.Column="0"
-                               Text="{Binding Id}"
-                               FontAttributes="Bold" />
-                        <Label Grid.Column="1"
-                               Text="{Binding PlayerName}" />
-                        <Label Grid.Column="2"
-                               Text="{Binding Team}" />
-                        <Label Grid.Column="3"
-                               Text="{Binding Points}" />
-                    </Grid>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+        <Label Text="{Binding PlayerLine}" />
+        <Label Text="{Binding TeamLine}" />
+        <Label Text="{Binding PointsLine}" />
     </VerticalStackLayout>
 
 </ContentPage>

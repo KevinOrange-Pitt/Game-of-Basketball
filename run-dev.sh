@@ -10,8 +10,8 @@ API_HEALTH_URL="http://127.0.0.1:5117/api/health"
 
 cd "$ROOT_DIR"
 
-if grep -q "<sql-user>\|<sql-password>\|{your_username}\|{your_password}" "$API_SETTINGS"; then
-  echo "Update GobTrackerApi/appsettings.Development.json with real SQL credentials before running."
+if ! az account show >/dev/null 2>&1; then
+  echo "Azure login is required for Active Directory auth. Run: az login"
   exit 1
 fi
 

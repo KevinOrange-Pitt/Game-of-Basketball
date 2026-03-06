@@ -1,5 +1,4 @@
 using MauiApp1.Models;
-using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace MauiApp1.Services;
@@ -13,9 +12,9 @@ public class DatabaseService
         _httpClient = httpClient;
     }
 
-    public async Task<List<DatabaseItem>> GetPlayersAsync()
+    public async Task<DatabaseItem?> GetMilestoneRecordAsync()
     {
-        using var response = await _httpClient.GetAsync("api/players");
+        using var response = await _httpClient.GetAsync("api/milestone-record");
         var body = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -24,12 +23,12 @@ public class DatabaseService
             throw new HttpRequestException($"API returned {(int)response.StatusCode} {response.ReasonPhrase}. {detail}");
         }
 
-        var players = JsonSerializer.Deserialize<List<DatabaseItem>>(body, new JsonSerializerOptions
+        var record = JsonSerializer.Deserialize<DatabaseItem>(body, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         });
 
-        return players ?? new List<DatabaseItem>();
+        return record;
     }
 
     private static string TryExtractProblemDetail(string body)

@@ -1,5 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using MauiApp1.Models;
+﻿using MauiApp1.Models;
 using MauiApp1.Services;
 
 namespace MauiApp1;
@@ -7,7 +6,11 @@ namespace MauiApp1;
 public partial class MainPage : ContentPage
 {
 	private readonly DatabaseService _databaseService;
-	public ObservableCollection<DatabaseItem> Items { get; } = new();
+
+	public string StatusMessage { get; set; } = "Press the button to fetch one record from the API.";
+	public string PlayerLine { get; set; } = "Player: -";
+	public string TeamLine { get; set; } = "Team: -";
+	public string PointsLine { get; set; } = "Points: -";
 
 	public MainPage()
 	{
@@ -19,7 +22,7 @@ public partial class MainPage : ContentPage
 		BindingContext = this;
 	}
 
-	private async void OnShowDatabaseClicked(object? sender, EventArgs e)
+	private async void OnLoadMilestoneClicked(object? sender, EventArgs e)
 	{
 		var actionButton = sender as Button;
 		if (actionButton is not null)
@@ -30,34 +33,45 @@ public partial class MainPage : ContentPage
 
 		try
 		{
-			var records = await _databaseService.GetPlayersAsync();
-			await BindPlayersAsync(records);
+			var record = await _databaseService.GetMilestoneRecordAsync();
+			ApplyRecord(record);
+			StatusMessage = record is null
+				? "API responded, but no rows were found in dbo.Players."
+				: "Success: MAUI -> API -> SQL is working.";
 		}
 		catch (Exception ex)
 		{
-			await DisplayAlertAsync("API Error", $"Could not load players from local API.\n\n{ex.Message}", "OK");
+			StatusMessage = "Could not load record from API.";
+			ApplyRecord(null);
+			await DisplayAlertAsync("API Error", $"Could not load milestone record from local API.\n\n{ex.Message}", "OK");
 		}
 		finally
 		{
+			OnPropertyChanged(nameof(StatusMessage));
+			OnPropertyChanged(nameof(PlayerLine));
+			OnPropertyChanged(nameof(TeamLine));
+			OnPropertyChanged(nameof(PointsLine));
+
 			if (actionButton is not null)
 			{
 				actionButton.IsEnabled = true;
-				actionButton.Text = "Show Players";
+				actionButton.Text = "Load Milestone Record";
 			}
 		}
 	}
 
-	private async Task BindPlayersAsync(List<DatabaseItem> records)
+	private void ApplyRecord(DatabaseItem? record)
 	{
-			Items.Clear();
-			foreach (var record in records)
-			{
-				Items.Add(record);
-			}
+		if (record is null)
+		{
+			PlayerLine = "Player: -";
+			TeamLine = "Team: -";
+			PointsLine = "Points: -";
+			return;
+		}
 
-			if (Items.Count == 0)
-			{
-				await DisplayAlertAsync("No Players", "Connected successfully, but no players were found.", "OK");
-			}
+		PlayerLine = $"Player: {record.PlayerName} (Id: {record.Id})";
+		TeamLine = $"Team: {record.Team}";
+		PointsLine = $"Points: {record.Points}";
 	}
 }
