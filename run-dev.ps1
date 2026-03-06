@@ -8,17 +8,6 @@ $apiHealthUrl = 'http://127.0.0.1:5117/api/health'
 
 Set-Location $rootDir
 
-if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
-    Write-Host 'Azure CLI is not installed. Install it, then run: az login'
-    exit 1
-}
-
-az account show | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host 'Azure login is required for Active Directory auth. Run: az login'
-    exit 1
-}
-
 Write-Host 'Starting local API...'
 $env:ASPNETCORE_ENVIRONMENT = 'Development'
 $apiProcess = Start-Process -FilePath dotnet -ArgumentList @('run', '--project', $apiProject, '--urls', 'http://127.0.0.1:5117') -PassThru -WindowStyle Hidden

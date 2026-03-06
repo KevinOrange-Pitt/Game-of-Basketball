@@ -10,11 +10,6 @@ API_HEALTH_URL="http://127.0.0.1:5117/api/health"
 
 cd "$ROOT_DIR"
 
-if ! az account show >/dev/null 2>&1; then
-  echo "Azure login is required for Active Directory auth. Run: az login"
-  exit 1
-fi
-
 echo "Starting local API..."
 ASPNETCORE_ENVIRONMENT="Development" ASPNETCORE_URLS="http://127.0.0.1:5117" dotnet run --project "$API_PROJECT" >/tmp/gobtracker-api.log 2>&1 &
 API_PID=$!

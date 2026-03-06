@@ -26,7 +26,7 @@ app.MapGet("/api/db-health", async (IConfiguration config) =>
 	{
 		return Results.Problem(
 			title: "Database configuration missing",
-			detail: "Configure at least one connection string: SqlDatabase, SqlDatabaseInteractive, or SqlDatabaseSqlAuth.",
+			detail: "Configure at least one connection string: SqlDatabaseSqlAuth or SqlDatabase.",
 			statusCode: StatusCodes.Status500InternalServerError);
 	}
 
@@ -54,7 +54,7 @@ app.MapGet("/api/milestone-record", async (IConfiguration config) =>
 	{
 		return Results.Problem(
 			title: "Database configuration missing",
-			detail: "Configure at least one connection string: SqlDatabase, SqlDatabaseInteractive, or SqlDatabaseSqlAuth.",
+			detail: "Configure at least one connection string: SqlDatabaseSqlAuth or SqlDatabase.",
 			statusCode: StatusCodes.Status500InternalServerError);
 	}
 
@@ -105,9 +105,8 @@ static IEnumerable<ConnectionCandidate> GetConnectionCandidates(IConfiguration c
 {
 	var keys = new[]
 	{
-		"SqlDatabase",
-		"SqlDatabaseInteractive",
-		"SqlDatabaseSqlAuth"
+		"SqlDatabaseSqlAuth",
+		"SqlDatabase"
 	};
 
 	var seen = new HashSet<string>(StringComparer.Ordinal);
