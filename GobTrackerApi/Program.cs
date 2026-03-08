@@ -444,6 +444,106 @@ app.MapDelete("/api/schedules/{id:int}", async (int id, IConfiguration config) =
     return Results.NoContent();
 });
 
+app.MapGet("/api/stats", async (IConfiguration config) =>
+{
+    var result = await TryExecuteWithFallbackAsync(config, LoadStatsAsync);
+    return ToListResult(result, "Database query failed");
+});
+
+app.MapGet("/api/stats/{id:int}", async (int id, IConfiguration config) =>
+{
+    var result = await TryExecuteWithFallbackAsync(config, cs => LoadStatByIdAsync(cs, id));
+    return ToSingleResult(result, $"No stat record found with Id {id}.");
+});
+
+app.MapPost("/api/stats", async (StatWriteDto stat, IConfiguration config) =>
+{
+    var validation = ValidateStat(stat);
+    if (validation is not null)
+    {
+        return Results.BadRequest(new { message = validation });
+    }
+
+    var result = await TryExecuteWithFallbackAsync(config, cs => InsertStatAsync(cs, stat));
+    if (result.Attempts.Count == 0)
+    {
+        return Results.Problem(
+            title: "Database configuration missing",
+            detail: "Configure at least one connection string: SqlDatabaseSqlAuth or SqlDatabase.",
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
+
+    if (result.SucceededConnection is null || result.Data is null)
+    {
+        return Results.Problem(
+            title: "Database insert failed",
+            detail: BuildAttemptsDetail(result.Attempts),
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    return Results.Created($"/api/stats/{result.Data.StatId}", result.Data);
+});
+
+app.MapPut("/api/stats/{id:int}", async (int id, StatWriteDto stat, IConfiguration config) =>
+{
+    var validation = ValidateStat(stat);
+    if (validation is not null)
+    {
+        return Results.BadRequest(new { message = validation });
+    }
+
+    var result = await TryExecuteWithFallbackAsync(config, cs => UpdateStatAsync(cs, id, stat));
+    if (result.Attempts.Count == 0)
+    {
+        return Results.Problem(
+            title: "Database configuration missing",
+            detail: "Configure at least one connection string: SqlDatabaseSqlAuth or SqlDatabase.",
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
+
+    if (result.SucceededConnection is null)
+    {
+        return Results.Problem(
+            title: "Database update failed",
+            detail: BuildAttemptsDetail(result.Attempts),
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    if (!result.Data)
+    {
+        return Results.NotFound(new { message = $"No stat record found with Id {id}." });
+    }
+
+    return Results.NoContent();
+});
+
+app.MapDelete("/api/stats/{id:int}", async (int id, IConfiguration config) =>
+{
+    var result = await TryExecuteWithFallbackAsync(config, cs => DeleteStatAsync(cs, id));
+    if (result.Attempts.Count == 0)
+    {
+        return Results.Problem(
+            title: "Database configuration missing",
+            detail: "Configure at least one connection string: SqlDatabaseSqlAuth or SqlDatabase.",
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
+
+    if (result.SucceededConnection is null)
+    {
+        return Results.Problem(
+            title: "Database delete failed",
+            detail: BuildAttemptsDetail(result.Attempts),
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    if (!result.Data)
+    {
+        return Results.NotFound(new { message = $"No stat record found with Id {id}." });
+    }
+
+    return Results.NoContent();
+});
+
 app.Run();
 
 static IResult ToListResult<T>(DbOperationResult<List<T>> result, string title)
@@ -1049,6 +1149,216 @@ static async Task<bool> DeleteScheduleAsync(string connectionString, int id)
     return await command.ExecuteNonQueryAsync() > 0;
 }
 
+static async Task EnsureStatsTableAsync(SqlConnection connection)
+{
+    const string sql = @"
+IF OBJECT_ID('dbo.Stats', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Stats
+    (
+        stat_id INT IDENTITY(1,1) PRIMARY KEY,
+        game_id INT NOT NULL,
+        player_id INT NOT NULL,
+        two_pt_miss INT NOT NULL DEFAULT 0,
+        two_pt_made INT NOT NULL DEFAULT 0,
+        three_pt_miss INT NOT NULL DEFAULT 0,
+        three_pt_made INT NOT NULL DEFAULT 0,
+        steals INT NOT NULL DEFAULT 0,
+        turnovers INT NOT NULL DEFAULT 0,
+        assists INT NOT NULL DEFAULT 0,
+        blocks INT NOT NULL DEFAULT 0,
+        fouls INT NOT NULL DEFAULT 0,
+        offensive_rebounds INT NOT NULL DEFAULT 0,
+        defensive_rebounds INT NOT NULL DEFAULT 0,
+        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+END;";
+
+    await using var command = new SqlCommand(sql, connection);
+    await command.ExecuteNonQueryAsync();
+}
+
+static async Task<List<StatDto>> LoadStatsAsync(string connectionString)
+{
+    var stats = new List<StatDto>();
+    await using var connection = await OpenConnectionAsync(connectionString);
+    await EnsureStatsTableAsync(connection);
+
+    const string sql = @"
+SELECT stat_id, game_id, player_id, two_pt_miss, two_pt_made, three_pt_miss, three_pt_made,
+       steals, turnovers, assists, blocks, fouls, offensive_rebounds, defensive_rebounds, created_at
+FROM dbo.Stats
+ORDER BY stat_id DESC;";
+
+    await using var command = new SqlCommand(sql, connection);
+    await using var reader = await command.ExecuteReaderAsync();
+
+    while (await reader.ReadAsync())
+    {
+        stats.Add(new StatDto(
+            reader.GetInt32(0),
+            reader.GetInt32(1),
+            reader.GetInt32(2),
+            reader.GetInt32(3),
+            reader.GetInt32(4),
+            reader.GetInt32(5),
+            reader.GetInt32(6),
+            reader.GetInt32(7),
+            reader.GetInt32(8),
+            reader.GetInt32(9),
+            reader.GetInt32(10),
+            reader.GetInt32(11),
+            reader.GetInt32(12),
+            reader.GetInt32(13),
+            reader.GetDateTime(14)));
+    }
+
+    return stats;
+}
+
+static async Task<StatDto?> LoadStatByIdAsync(string connectionString, int id)
+{
+    await using var connection = await OpenConnectionAsync(connectionString);
+    await EnsureStatsTableAsync(connection);
+
+    const string sql = @"
+SELECT stat_id, game_id, player_id, two_pt_miss, two_pt_made, three_pt_miss, three_pt_made,
+       steals, turnovers, assists, blocks, fouls, offensive_rebounds, defensive_rebounds, created_at
+FROM dbo.Stats
+WHERE stat_id = @id;";
+
+    await using var command = new SqlCommand(sql, connection);
+    command.Parameters.AddWithValue("@id", id);
+    await using var reader = await command.ExecuteReaderAsync();
+
+    if (!await reader.ReadAsync())
+    {
+        return null;
+    }
+
+    return new StatDto(
+        reader.GetInt32(0),
+        reader.GetInt32(1),
+        reader.GetInt32(2),
+        reader.GetInt32(3),
+        reader.GetInt32(4),
+        reader.GetInt32(5),
+        reader.GetInt32(6),
+        reader.GetInt32(7),
+        reader.GetInt32(8),
+        reader.GetInt32(9),
+        reader.GetInt32(10),
+        reader.GetInt32(11),
+        reader.GetInt32(12),
+        reader.GetInt32(13),
+        reader.GetDateTime(14));
+}
+
+static async Task<StatDto> InsertStatAsync(string connectionString, StatWriteDto stat)
+{
+    await using var connection = await OpenConnectionAsync(connectionString);
+    await EnsureStatsTableAsync(connection);
+
+    const string sql = @"
+INSERT INTO dbo.Stats
+(
+    game_id, player_id, two_pt_miss, two_pt_made, three_pt_miss, three_pt_made,
+    steals, turnovers, assists, blocks, fouls, offensive_rebounds, defensive_rebounds
+)
+OUTPUT inserted.stat_id, inserted.created_at
+VALUES
+(
+    @game_id, @player_id, @two_pt_miss, @two_pt_made, @three_pt_miss, @three_pt_made,
+    @steals, @turnovers, @assists, @blocks, @fouls, @offensive_rebounds, @defensive_rebounds
+);";
+
+    await using var command = new SqlCommand(sql, connection);
+    command.Parameters.AddWithValue("@game_id", stat.GameId);
+    command.Parameters.AddWithValue("@player_id", stat.PlayerId);
+    command.Parameters.AddWithValue("@two_pt_miss", stat.TwoPtMiss);
+    command.Parameters.AddWithValue("@two_pt_made", stat.TwoPtMade);
+    command.Parameters.AddWithValue("@three_pt_miss", stat.ThreePtMiss);
+    command.Parameters.AddWithValue("@three_pt_made", stat.ThreePtMade);
+    command.Parameters.AddWithValue("@steals", stat.Steals);
+    command.Parameters.AddWithValue("@turnovers", stat.Turnovers);
+    command.Parameters.AddWithValue("@assists", stat.Assists);
+    command.Parameters.AddWithValue("@blocks", stat.Blocks);
+    command.Parameters.AddWithValue("@fouls", stat.Fouls);
+    command.Parameters.AddWithValue("@offensive_rebounds", stat.OffensiveRebounds);
+    command.Parameters.AddWithValue("@defensive_rebounds", stat.DefensiveRebounds);
+
+    await using var reader = await command.ExecuteReaderAsync();
+    await reader.ReadAsync();
+
+    return new StatDto(
+        reader.GetInt32(0),
+        stat.GameId,
+        stat.PlayerId,
+        stat.TwoPtMiss,
+        stat.TwoPtMade,
+        stat.ThreePtMiss,
+        stat.ThreePtMade,
+        stat.Steals,
+        stat.Turnovers,
+        stat.Assists,
+        stat.Blocks,
+        stat.Fouls,
+        stat.OffensiveRebounds,
+        stat.DefensiveRebounds,
+        reader.GetDateTime(1));
+}
+
+static async Task<bool> UpdateStatAsync(string connectionString, int id, StatWriteDto stat)
+{
+    await using var connection = await OpenConnectionAsync(connectionString);
+    await EnsureStatsTableAsync(connection);
+
+    const string sql = @"
+UPDATE dbo.Stats
+SET game_id = @game_id,
+    player_id = @player_id,
+    two_pt_miss = @two_pt_miss,
+    two_pt_made = @two_pt_made,
+    three_pt_miss = @three_pt_miss,
+    three_pt_made = @three_pt_made,
+    steals = @steals,
+    turnovers = @turnovers,
+    assists = @assists,
+    blocks = @blocks,
+    fouls = @fouls,
+    offensive_rebounds = @offensive_rebounds,
+    defensive_rebounds = @defensive_rebounds
+WHERE stat_id = @id;";
+
+    await using var command = new SqlCommand(sql, connection);
+    command.Parameters.AddWithValue("@id", id);
+    command.Parameters.AddWithValue("@game_id", stat.GameId);
+    command.Parameters.AddWithValue("@player_id", stat.PlayerId);
+    command.Parameters.AddWithValue("@two_pt_miss", stat.TwoPtMiss);
+    command.Parameters.AddWithValue("@two_pt_made", stat.TwoPtMade);
+    command.Parameters.AddWithValue("@three_pt_miss", stat.ThreePtMiss);
+    command.Parameters.AddWithValue("@three_pt_made", stat.ThreePtMade);
+    command.Parameters.AddWithValue("@steals", stat.Steals);
+    command.Parameters.AddWithValue("@turnovers", stat.Turnovers);
+    command.Parameters.AddWithValue("@assists", stat.Assists);
+    command.Parameters.AddWithValue("@blocks", stat.Blocks);
+    command.Parameters.AddWithValue("@fouls", stat.Fouls);
+    command.Parameters.AddWithValue("@offensive_rebounds", stat.OffensiveRebounds);
+    command.Parameters.AddWithValue("@defensive_rebounds", stat.DefensiveRebounds);
+
+    return await command.ExecuteNonQueryAsync() > 0;
+}
+
+static async Task<bool> DeleteStatAsync(string connectionString, int id)
+{
+    await using var connection = await OpenConnectionAsync(connectionString);
+    await EnsureStatsTableAsync(connection);
+
+    await using var command = new SqlCommand("DELETE FROM dbo.Stats WHERE stat_id = @id;", connection);
+    command.Parameters.AddWithValue("@id", id);
+    return await command.ExecuteNonQueryAsync() > 0;
+}
+
 static string? ValidateTeam(TeamWriteDto team)
 {
     if (string.IsNullOrWhiteSpace(team.Name))
@@ -1124,6 +1434,41 @@ static string? ValidateSchedule(ScheduleWriteDto schedule)
     return null;
 }
 
+static string? ValidateStat(StatWriteDto stat)
+{
+    if (stat.GameId <= 0)
+    {
+        return "Game Id must be greater than zero.";
+    }
+
+    if (stat.PlayerId <= 0)
+    {
+        return "Player Id must be greater than zero.";
+    }
+
+    var values = new[]
+    {
+        stat.TwoPtMiss,
+        stat.TwoPtMade,
+        stat.ThreePtMiss,
+        stat.ThreePtMade,
+        stat.Steals,
+        stat.Turnovers,
+        stat.Assists,
+        stat.Blocks,
+        stat.Fouls,
+        stat.OffensiveRebounds,
+        stat.DefensiveRebounds
+    };
+
+    if (values.Any(v => v < 0))
+    {
+        return "Stat values cannot be negative.";
+    }
+
+    return null;
+}
+
 public record ConnectionCandidate(string Name, string ConnectionString);
 public record ConnectionAttempt(string Name, bool Success, string? Error);
 public record DbOperationResult<T>(T? Data, string? SucceededConnection, List<ConnectionAttempt> Attempts);
@@ -1141,3 +1486,35 @@ public record GameWriteDto(int HomeTeamId, int AwayTeamId, DateTime GameDate, st
 
 public record ScheduleDto(int ScheduleId, int TeamId, int GameId, bool IsHome, DateTime CreatedAt);
 public record ScheduleWriteDto(int TeamId, int GameId, bool IsHome);
+
+public record StatDto(
+    int StatId,
+    int GameId,
+    int PlayerId,
+    int TwoPtMiss,
+    int TwoPtMade,
+    int ThreePtMiss,
+    int ThreePtMade,
+    int Steals,
+    int Turnovers,
+    int Assists,
+    int Blocks,
+    int Fouls,
+    int OffensiveRebounds,
+    int DefensiveRebounds,
+    DateTime CreatedAt);
+
+public record StatWriteDto(
+    int GameId,
+    int PlayerId,
+    int TwoPtMiss,
+    int TwoPtMade,
+    int ThreePtMiss,
+    int ThreePtMade,
+    int Steals,
+    int Turnovers,
+    int Assists,
+    int Blocks,
+    int Fouls,
+    int OffensiveRebounds,
+    int DefensiveRebounds);
