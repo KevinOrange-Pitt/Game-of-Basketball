@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MauiApp1.Pages.TeamsPage"
+             Title="Teams">
+
+    <ContentPage.Resources>
+        <Style TargetType="Entry">
+            <Setter Property="TextColor" Value="#0F172A" />
+            <Setter Property="PlaceholderColor" Value="#64748B" />
+            <Setter Property="BackgroundColor" Value="#FFFFFF" />
+        </Style>
+    </ContentPage.Resources>
+
+    <ContentPage.BackgroundColor>#F1F5F9</ContentPage.BackgroundColor>
+
+    <Grid Padding="16" ColumnDefinitions="1.1*,1*" ColumnSpacing="12" RowDefinitions="Auto,*">
+        <Grid Grid.Row="0" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+            <Label Grid.Column="0" Text="Teams" FontSize="30" FontAttributes="Bold" TextColor="#0F172A" />
+            <Button Grid.Column="1" Text="Refresh" Clicked="OnRefreshClicked" BackgroundColor="#2563EB" TextColor="White" />
+        </Grid>
+
+        <Border Grid.Row="1" Grid.Column="0" Stroke="#CBD5E1" StrokeThickness="1" BackgroundColor="White" Padding="12" StrokeShape="RoundRectangle 12">
+            <VerticalStackLayout Spacing="8">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <Entry Grid.Column="0" Placeholder="Team name" Text="{Binding TeamNameInput}" />
+                    <Entry Grid.Column="1" Placeholder="City" Text="{Binding TeamCityInput}" />
+                </Grid>
+
+                <Entry Placeholder="Coach" Text="{Binding TeamCoachInput}" />
+
+                <Label Text="{Binding SelectedTeamHeader}" FontSize="12" TextColor="#475569" />
+
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
+                    <Button Grid.Column="0" Text="Create" Clicked="OnCreateTeamClicked" BackgroundColor="#16A34A" TextColor="White" />
+                    <Button Grid.Column="1" Text="Update" Clicked="OnUpdateTeamClicked" BackgroundColor="#F59E0B" TextColor="White" />
+                    <Button Grid.Column="2" Text="Delete" Clicked="OnDeleteTeamClicked" BackgroundColor="#DC2626" TextColor="White" />
+                    <Button Grid.Column="3" Text="Clear" Clicked="OnClearTeamClicked" BackgroundColor="#475569" TextColor="White" />
+                </Grid>
+
+                <CollectionView ItemsSource="{Binding Teams}"
+                                SelectionMode="Single"
+                                SelectionChanged="OnTeamSelectionChanged">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="10" Margin="0,0,0,6" StrokeShape="RoundRectangle 9">
+                                <Label Text="{Binding Display}" TextColor="#1E293B" />
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="1" Stroke="#CBD5E1" StrokeThickness="1" BackgroundColor="White" Padding="12" StrokeShape="RoundRectangle 12">
+            <ScrollView>
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Team Detail" FontSize="22" FontAttributes="Bold" TextColor="#0F172A" />
+                    <Label Text="{Binding SelectedTeamDetail}" TextColor="#334155" />
+
+                    <Label Text="Roster" FontSize="17" FontAttributes="Bold" TextColor="#334155" />
+                    <CollectionView ItemsSource="{Binding Roster}" HeightRequest="180">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Label Text="{Binding Display}" TextColor="#475569" Margin="0,0,0,5" />
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <Label Text="Schedule" FontSize="17" FontAttributes="Bold" TextColor="#334155" />
+                    <CollectionView ItemsSource="{Binding Schedule}" HeightRequest="180">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Label Text="{Binding Display}" TextColor="#475569" Margin="0,0,0,5" />
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </ScrollView>
+        </Border>
+    </Grid>
+
+</ContentPage>

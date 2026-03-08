@@ -21,6 +21,7 @@ public class DatabaseService
     public async Task<List<PlayerItem>> GetPlayersAsync() => await GetListAsync<PlayerItem>("api/players");
     public async Task<List<GameItem>> GetGamesAsync() => await GetListAsync<GameItem>("api/games");
     public async Task<List<ScheduleItem>> GetSchedulesAsync() => await GetListAsync<ScheduleItem>("api/schedules");
+    public async Task<List<StatItem>> GetStatsAsync() => await GetListAsync<StatItem>("api/stats");
 
     public async Task<TeamItem> CreateTeamAsync(string name, string city, string coach)
         => await PostAsync<TeamItem>("api/teams", new TeamWriteRequest(name, city, coach));
@@ -57,6 +58,68 @@ public class DatabaseService
 
     public async Task DeleteScheduleAsync(int id)
         => await DeleteAsync($"api/schedules/{id}");
+
+    public async Task<StatItem> CreateStatAsync(
+        int gameId,
+        int playerId,
+        int twoPtMiss,
+        int twoPtMade,
+        int threePtMiss,
+        int threePtMade,
+        int steals,
+        int turnovers,
+        int assists,
+        int blocks,
+        int fouls,
+        int offensiveRebounds,
+        int defensiveRebounds)
+        => await PostAsync<StatItem>("api/stats", new StatWriteRequest(
+            gameId,
+            playerId,
+            twoPtMiss,
+            twoPtMade,
+            threePtMiss,
+            threePtMade,
+            steals,
+            turnovers,
+            assists,
+            blocks,
+            fouls,
+            offensiveRebounds,
+            defensiveRebounds));
+
+    public async Task UpdateStatAsync(
+        int id,
+        int gameId,
+        int playerId,
+        int twoPtMiss,
+        int twoPtMade,
+        int threePtMiss,
+        int threePtMade,
+        int steals,
+        int turnovers,
+        int assists,
+        int blocks,
+        int fouls,
+        int offensiveRebounds,
+        int defensiveRebounds)
+        => await PutAsync($"api/stats/{id}", new StatWriteRequest(
+            gameId,
+            playerId,
+            twoPtMiss,
+            twoPtMade,
+            threePtMiss,
+            threePtMade,
+            steals,
+            turnovers,
+            assists,
+            blocks,
+            fouls,
+            offensiveRebounds,
+            defensiveRebounds));
+
+    public async Task DeleteStatAsync(int id)
+        => await DeleteAsync($"api/stats/{id}");
 
     private async Task<List<T>> GetListAsync<T>(string endpoint)
     {
@@ -137,4 +200,18 @@ public class DatabaseService
     private record PlayerWriteRequest(int TeamId, string FirstName, string LastName, int? JerseyNumber, string Position);
     private record GameWriteRequest(int HomeTeamId, int AwayTeamId, DateTime GameDate, string Location, int? HomeScore, int? AwayScore, string Status);
     private record ScheduleWriteRequest(int TeamId, int GameId, bool IsHome);
+    private record StatWriteRequest(
+        int GameId,
+        int PlayerId,
+        int TwoPtMiss,
+        int TwoPtMade,
+        int ThreePtMiss,
+        int ThreePtMade,
+        int Steals,
+        int Turnovers,
+        int Assists,
+        int Blocks,
+        int Fouls,
+        int OffensiveRebounds,
+        int DefensiveRebounds);
 }
