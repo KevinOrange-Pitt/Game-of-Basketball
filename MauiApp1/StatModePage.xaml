@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MauiApp1.StatModePage"
+             Title="Stats">
+
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#0E1628" Offset="0.0" />
+            <GradientStop Color="#1B2C48" Offset="0.6" />
+            <GradientStop Color="#24416B" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16,18" Spacing="12">
+
+            <!-- Header -->
+            <Border StrokeThickness="0" BackgroundColor="#13203A" Padding="14" StrokeShape="RoundRectangle 14">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Stat Mode" FontSize="26" FontAttributes="Bold" TextColor="#EFF6FF" />
+                    <Label Text="Search players or teams to view detailed statistics." TextColor="#B7CAE3" FontSize="13" />
+                    <Label Text="{Binding StatusMessage}" TextColor="#89E4C8" FontSize="12" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Search Box -->
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Search" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Entry Grid.Column="0"
+                               Placeholder="Search by player name or team..."
+                               Text="{Binding SearchQuery}"
+                               TextChanged="OnSearchTextChanged"
+                               BackgroundColor="White"
+                               TextColor="Black"
+                               PlaceholderColor="#5B6470" />
+                        <Button Grid.Column="1" Text="Clear"
+                                Clicked="OnClearSearchClicked"
+                                BackgroundColor="#6A7685" TextColor="White" />
+                    </Grid>
+
+                    <!-- Filter Tabs -->
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" Text="Players"
+                                Clicked="OnShowPlayersClicked"
+                                BackgroundColor="{Binding PlayerTabColor}" TextColor="White" />
+                        <Button Grid.Column="1" Text="Teams"
+                                Clicked="OnShowTeamsClicked"
+                                BackgroundColor="{Binding TeamTabColor}" TextColor="White" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Player Stats Table -->
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14"
+                    IsVisible="{Binding ShowingPlayers}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Player Statistics" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
+
+                    <!-- Headers -->
+                    <Grid ColumnDefinitions="*,45,45,45,45,45,45" ColumnSpacing="4">
+                        <Label Grid.Column="0" Text="Player" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" />
+                        <Label Grid.Column="1" Text="PTS" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="2" Text="REB" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="3" Text="AST" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="4" Text="STL" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="5" Text="BLK" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="6" Text="GP" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                    </Grid>
+
+                    <CollectionView ItemsSource="{Binding FilteredPlayerStats}" HeightRequest="350">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Stroke="#DDE6F3" StrokeThickness="1" BackgroundColor="White"
+                                        Padding="4,6" Margin="0,0,0,4" StrokeShape="RoundRectangle 8">
+                                    <Grid ColumnDefinitions="*,45,45,45,45,45,45" ColumnSpacing="4">
+                                        <VerticalStackLayout Grid.Column="0" Spacing="1">
+                                            <Label Text="{Binding PlayerName}" FontSize="13" FontAttributes="Bold" TextColor="#12335A" />
+                                            <Label Text="{Binding TeamName}" FontSize="11" TextColor="#7D91AB" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1" Text="{Binding TotalPoints}" FontSize="13" FontAttributes="Bold" TextColor="#1FA774" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        <Label Grid.Column="2" Text="{Binding TotalRebounds}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        <Label Grid.Column="3" Text="{Binding TotalAssists}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        <Label Grid.Column="4" Text="{Binding TotalSteals}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        <Label Grid.Column="5" Text="{Binding TotalBlocks}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        <Label Grid.Column="6" Text="{Binding GamesPlayed}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" VerticalOptions="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Team Stats Table -->
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14"
+                    IsVisible="{Binding ShowingTeams}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Team Statistics" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
+
+                    <!-- Headers -->
+                    <Grid ColumnDefinitions="*,50,50,50,50,50" ColumnSpacing="4">
+                        <Label Grid.Column="0" Text="Team" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" />
+                        <Label Grid.Column="1" Text="PTS" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="2" Text="REB" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="3" Text="AST" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="4" Text="STL" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="5" Text="GP" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                    </Grid>
+
+                    <CollectionView ItemsSource="{Binding FilteredTeamStats}" HeightRequest="250">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Stroke="#DDE6F3" StrokeThickness="1" BackgroundColor="White"
+                                        Padding="4,6" Margin="0,0,0,4" StrokeShape="RoundRectangle 8">
+                                    <Grid ColumnDefinitions="*,50,50,50,50,50" ColumnSpacing="4">
+                                        <VerticalStackLayout Grid.Column="0" Spacing="1">
+                                            <Label Text="{Binding TeamName}" FontSize="13" FontAttributes="Bold" TextColor="#12335A" />
+                                            <Label Text="{Binding City}" FontSize="11" TextColor="#7D91AB" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1" Text="{Binding TotalPoints}" FontSize="13" FontAttributes="Bold" TextColor="#2F80ED" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        <Label Grid.Column="2" Text="{Binding TotalRebounds}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        <Label Grid.Column="3" Text="{Binding TotalAssists}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        <Label Grid.Column="4" Text="{Binding TotalSteals}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        <Label Grid.Column="5" Text="{Binding GamesPlayed}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" VerticalOptions="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Border>
+
+            <ActivityIndicator IsRunning="{Binding IsWorking}" IsVisible="{Binding IsWorking}" Color="White" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

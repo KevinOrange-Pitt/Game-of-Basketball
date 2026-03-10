@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MauiApp1.GameViewPage"
+             Title="Game View">
+
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#0E1628" Offset="0.0" />
+            <GradientStop Color="#1B2C48" Offset="0.6" />
+            <GradientStop Color="#24416B" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16,18" Spacing="12">
+
+            <!-- Header -->
+            <Border StrokeThickness="0" BackgroundColor="#13203A" Padding="14" StrokeShape="RoundRectangle 14">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Game View Mode" FontSize="26" FontAttributes="Bold" TextColor="#EFF6FF" />
+                    <Label Text="Select a game to view live score and player stats." TextColor="#B7CAE3" FontSize="13" />
+                    <Label Text="{Binding StatusMessage}" TextColor="#89E4C8" FontSize="12" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Game Selector -->
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14">
+                <VerticalStackLayout Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Label Grid.Column="0" Text="Select Game" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
+                        <Button Grid.Column="1" Text="Refresh" Clicked="OnRefreshClicked"
+                                BackgroundColor="#E3EEFF" TextColor="#1F3C66" IsEnabled="{Binding CanRefresh}" />
+                    </Grid>
+                    <Picker Title="-- Pick a game --"
+                            ItemsSource="{Binding Games}"
+                            ItemDisplayBinding="{Binding Matchup}"
+                            SelectedItem="{Binding SelectedGame}"
+                            SelectedIndexChanged="OnGamePickerChanged" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Score Board -->
+            <Border StrokeThickness="0" BackgroundColor="#13203A" Padding="16" StrokeShape="RoundRectangle 14"
+                    IsVisible="{Binding GameSelected}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="{Binding GameDateDisplay}" TextColor="#B7CAE3" FontSize="12" HorizontalOptions="Center" />
+                    <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="8">
+                        <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center" Spacing="4">
+                            <Label Text="{Binding HomeTeamName}" TextColor="#EFF6FF" FontSize="16" FontAttributes="Bold" HorizontalOptions="Center" />
+                            <Label Text="HOME" TextColor="#7D91AB" FontSize="11" HorizontalOptions="Center" />
+                            <Label Text="{Binding HomeScore}" FontSize="48" FontAttributes="Bold" TextColor="#89E4C8" HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="4">
+                            <Label Text="vs" FontSize="22" TextColor="#7D91AB" HorizontalOptions="Center" />
+                            <Border BackgroundColor="#2F80ED" Padding="8,4" StrokeShape="RoundRectangle 8" StrokeThickness="0">
+                                <Label Text="{Binding GameStatus}" TextColor="White" FontSize="12" FontAttributes="Bold" HorizontalOptions="Center" />
+                            </Border>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center" Spacing="4">
+                            <Label Text="{Binding AwayTeamName}" TextColor="#EFF6FF" FontSize="16" FontAttributes="Bold" HorizontalOptions="Center" />
+                            <Label Text="AWAY" TextColor="#7D91AB" FontSize="11" HorizontalOptions="Center" />
+                            <Label Text="{Binding AwayScore}" FontSize="48" FontAttributes="Bold" TextColor="#F5B83D" HorizontalOptions="Center" />
+                        </VerticalStackLayout>
+                    </Grid>
+                    <Label Text="{Binding Location}" TextColor="#7D91AB" FontSize="12" HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Home Team Stats -->
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14"
+                    IsVisible="{Binding HasStats}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="{Binding HomeTeamName}" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
+
+                    <!-- Column Headers -->
+                    <Grid ColumnDefinitions="*,50,50,50,50,50,50" ColumnSpacing="4">
+                        <Label Grid.Column="0" Text="Player" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" />
+                        <Label Grid.Column="1" Text="PTS" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="2" Text="REB" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="3" Text="AST" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="4" Text="STL" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="5" Text="BLK" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="6" Text="TO" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                    </Grid>
+
+                    <CollectionView ItemsSource="{Binding HomePlayerStats}" HeightRequest="200">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,50,50,50,50,50,50" ColumnSpacing="4" Padding="0,4">
+                                    <Label Grid.Column="0" Text="{Binding PlayerName}" FontSize="13" TextColor="#12335A" />
+                                    <Label Grid.Column="1" Text="{Binding Points}" FontSize="13" FontAttributes="Bold" TextColor="#1FA774" HorizontalOptions="Center" />
+                                    <Label Grid.Column="2" Text="{Binding Rebounds}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" />
+                                    <Label Grid.Column="3" Text="{Binding Assists}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" />
+                                    <Label Grid.Column="4" Text="{Binding Steals}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" />
+                                    <Label Grid.Column="5" Text="{Binding Blocks}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" />
+                                    <Label Grid.Column="6" Text="{Binding Turnovers}" FontSize="13" TextColor="#E4555F" HorizontalOptions="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Away Team Stats -->
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14"
+                    IsVisible="{Binding HasStats}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="{Binding AwayTeamName}" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
+
+                    <Grid ColumnDefinitions="*,50,50,50,50,50,50" ColumnSpacing="4">
+                        <Label Grid.Column="0" Text="Player" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" />
+                        <Label Grid.Column="1" Text="PTS" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="2" Text="REB" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="3" Text="AST" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="4" Text="STL" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="5" Text="BLK" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                        <Label Grid.Column="6" Text="TO" FontSize="11" FontAttributes="Bold" TextColor="#7D91AB" HorizontalOptions="Center" />
+                    </Grid>
+
+                    <CollectionView ItemsSource="{Binding AwayPlayerStats}" HeightRequest="200">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,50,50,50,50,50,50" ColumnSpacing="4" Padding="0,4">
+                                    <Label Grid.Column="0" Text="{Binding PlayerName}" FontSize="13" TextColor="#12335A" />
+                                    <Label Grid.Column="1" Text="{Binding Points}" FontSize="13" FontAttributes="Bold" TextColor="#F5B83D" HorizontalOptions="Center" />
+                                    <Label Grid.Column="2" Text="{Binding Rebounds}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" />
+                                    <Label Grid.Column="3" Text="{Binding Assists}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" />
+                                    <Label Grid.Column="4" Text="{Binding Steals}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" />
+                                    <Label Grid.Column="5" Text="{Binding Blocks}" FontSize="13" TextColor="#485D78" HorizontalOptions="Center" />
+                                    <Label Grid.Column="6" Text="{Binding Turnovers}" FontSize="13" TextColor="#E4555F" HorizontalOptions="Center" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Border>
+
+            <ActivityIndicator IsRunning="{Binding IsWorking}" IsVisible="{Binding IsWorking}" Color="White" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

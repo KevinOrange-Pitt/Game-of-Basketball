@@ -4,11 +4,27 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:MauiApp1"
-    Title="MauiApp1">
+    Title="GOB Tracker"
+    FlyoutBehavior="Flyout">
 
     <ShellContent
-        Title="Home"
+        Title="Dashboard"
         ContentTemplate="{DataTemplate local:MainPage}"
         Route="MainPage" />
+
+    <ShellContent
+        Title="Score Keeping"
+        ContentTemplate="{DataTemplate local:ScoreKeepingPage}"
+        Route="ScoreKeepingPage" />
+
+    <ShellContent
+        Title="Game View"
+        ContentTemplate="{DataTemplate local:GameViewPage}"
+        Route="GameViewPage" />
+
+    <ShellContent
+        Title="Stats"
+        ContentTemplate="{DataTemplate local:StatModePage}"
+        Route="StatModePage" />
 
 </Shell>
