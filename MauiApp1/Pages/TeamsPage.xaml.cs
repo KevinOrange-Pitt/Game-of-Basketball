@@ -11,7 +11,7 @@ public partial class TeamsPage : ContentPage
 
     public ObservableCollection<TeamItem> Teams { get; } = new();
     public ObservableCollection<PlayerItem> Roster { get; } = new();
-    public ObservableCollection<ScheduleItem> Schedule { get; } = new();
+    public ObservableCollection<TeamScheduleRow> Schedule { get; } = new();
 
     public string SelectedTeamHeader { get; set; } = "Select a team";
     public string SelectedTeamDetail { get; set; } = "Choose a team to view roster and schedule.";
@@ -132,7 +132,7 @@ public partial class TeamsPage : ContentPage
     private void OnClearTeamClicked(object sender, EventArgs e)
     {
         _selectedTeam = null;
-        TeamSelectionState.SelectedTeamName = "Select a team";
+        TeamSelectionState.SetSelectedTeam(null, "Select a team");
         ClearTeamForm();
     }
 
@@ -144,7 +144,7 @@ public partial class TeamsPage : ContentPage
         }
 
         _selectedTeam = team;
-        TeamSelectionState.SelectedTeamName = team.Name;
+        TeamSelectionState.SetSelectedTeam(team.TeamId, team.Name);
         TeamNameInput = team.Name;
         TeamCityInput = team.City;
         TeamCoachInput = team.Coach;
@@ -162,6 +162,10 @@ public partial class TeamsPage : ContentPage
         {
             var players = await _databaseService.GetPlayersAsync();
             var schedules = await _databaseService.GetSchedulesAsync();
+            var games = await _databaseService.GetGamesAsync();
+            var teams = await _databaseService.GetTeamsAsync();
+
+            var teamNameById = teams.ToDictionary(t => t.TeamId, t => t.Name);
 
             Roster.Clear();
             foreach (var player in players.Where(p => p.TeamId == team.TeamId).OrderBy(p => p.JerseyNumber ?? 999))
@@ -170,11 +174,64 @@ public partial class TeamsPage : ContentPage
             }
 
             Schedule.Clear();
-            foreach (var schedule in schedules.Where(s => s.TeamId == team.TeamId)
-                                              .OrderByDescending(s => s.ScheduleId)
-                                              .Take(8))
+
+            var teamSchedules = schedules.Where(s => s.TeamId == team.TeamId)
+                                         .OrderByDescending(s => s.ScheduleId)
+                                         .ToList();
+
+            if (teamSchedules.Count == 0)
             {
-                Schedule.Add(schedule);
+                // Fallback: show games involving the selected team even if Schedule records were never created.
+                foreach (var game in games.Where(g => g.HomeTeamId == team.TeamId || g.AwayTeamId == team.TeamId)
+                                          .OrderByDescending(g => g.GameDate)
+                                          .Take(8))
+                {
+                    var homeName = teamNameById.TryGetValue(game.HomeTeamId, out var homeTeamName)
+                        ? homeTeamName
+                        : $"Team {game.HomeTeamId}";
+
+                    var awayName = teamNameById.TryGetValue(game.AwayTeamId, out var awayTeamName)
+                        ? awayTeamName
+                        : $"Team {game.AwayTeamId}";
+
+                    var side = game.HomeTeamId == team.TeamId ? "Home" : "Away";
+                    Schedule.Add(new TeamScheduleRow
+                    {
+                        PrimaryText = $"{homeName} vs {awayName}",
+                        SecondaryText = $"{game.GameDate:MMM d, h:mm tt} | {side} | {game.Status}"
+                    });
+                }
+
+                return;
+            }
+
+            foreach (var schedule in teamSchedules.Take(8))
+            {
+                var game = games.FirstOrDefault(g => g.GameId == schedule.GameId);
+                if (game is null)
+                {
+                    Schedule.Add(new TeamScheduleRow
+                    {
+                        PrimaryText = $"Game {schedule.GameId}",
+                        SecondaryText = schedule.IsHome ? "Home" : "Away"
+                    });
+                    continue;
+                }
+
+                var homeName = teamNameById.TryGetValue(game.HomeTeamId, out var homeTeamName)
+                    ? homeTeamName
+                    : $"Team {game.HomeTeamId}";
+
+                var awayName = teamNameById.TryGetValue(game.AwayTeamId, out var awayTeamName)
+                    ? awayTeamName
+                    : $"Team {game.AwayTeamId}";
+
+                var side = schedule.IsHome ? "Home" : "Away";
+                Schedule.Add(new TeamScheduleRow
+                {
+                    PrimaryText = $"{homeName} vs {awayName}",
+                    SecondaryText = $"{game.GameDate:MMM d, h:mm tt} | {side} | {game.Status}"
+                });
             }
         }
         catch
@@ -190,7 +247,7 @@ public partial class TeamsPage : ContentPage
         TeamCoachInput = string.Empty;
         SelectedTeamHeader = "Select a team";
         SelectedTeamDetail = "Choose a team to view roster and schedule.";
-        TeamSelectionState.SelectedTeamName = "Select a team";
+        TeamSelectionState.SetSelectedTeam(null, "Select a team");
 
         OnPropertyChanged(nameof(TeamNameInput));
         OnPropertyChanged(nameof(TeamCityInput));
@@ -198,4 +255,10 @@ public partial class TeamsPage : ContentPage
         OnPropertyChanged(nameof(SelectedTeamHeader));
         OnPropertyChanged(nameof(SelectedTeamDetail));
     }
+}
+
+public class TeamScheduleRow
+{
+    public string PrimaryText { get; set; } = string.Empty;
+    public string SecondaryText { get; set; } = string.Empty;
 }

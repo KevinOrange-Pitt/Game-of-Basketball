@@ -20,16 +20,18 @@ public partial class AppShell : Shell
 	{
 		var normalTitle = new UIStringAttributes
 		{
-			Font = UIFont.SystemFontOfSize(16, UIFontWeight.Medium)
+			Font = UIFont.SystemFontOfSize(14, UIFontWeight.Medium)
 		};
 
 		var selectedTitle = new UIStringAttributes
 		{
-			Font = UIFont.SystemFontOfSize(160, UIFontWeight.Semibold)
+			Font = UIFont.SystemFontOfSize(15, UIFontWeight.Semibold)
 		};
 
 		var appearance = new UITabBarAppearance();
 		appearance.ConfigureWithDefaultBackground();
+		appearance.StackedLayoutAppearance.Normal.TitlePositionAdjustment = new UIOffset(0, -1);
+		appearance.StackedLayoutAppearance.Selected.TitlePositionAdjustment = new UIOffset(0, -1);
 		appearance.StackedLayoutAppearance.Normal.TitleTextAttributes = normalTitle;
 		appearance.StackedLayoutAppearance.Selected.TitleTextAttributes = selectedTitle;
 		appearance.InlineLayoutAppearance.Normal.TitleTextAttributes = normalTitle;
@@ -37,6 +39,8 @@ public partial class AppShell : Shell
 		appearance.CompactInlineLayoutAppearance.Normal.TitleTextAttributes = normalTitle;
 		appearance.CompactInlineLayoutAppearance.Selected.TitleTextAttributes = selectedTitle;
 
+		UITabBar.Appearance.ItemPositioning = UITabBarItemPositioning.Fill;
+		UITabBar.Appearance.ItemSpacing = 0;
 		UITabBar.Appearance.StandardAppearance = appearance;
 		UITabBar.Appearance.ScrollEdgeAppearance = appearance;
 	}

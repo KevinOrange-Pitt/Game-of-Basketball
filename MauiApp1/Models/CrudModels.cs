@@ -72,3 +72,9 @@ public class StatItem
     public int TotalPoints => (TwoPtMade * 2) + (ThreePtMade * 3);
     public string Display => $"Stat {StatId}: G{GameId} P{PlayerId} {TotalPoints} pts";
 }
+
+public class GamePickerItem
+{
+    public GameItem? Game { get; set; }
+    public string DisplayText { get; set; } = string.Empty;
+}

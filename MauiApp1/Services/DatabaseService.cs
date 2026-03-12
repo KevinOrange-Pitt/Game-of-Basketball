@@ -23,6 +23,12 @@ public class DatabaseService
     public async Task<List<ScheduleItem>> GetSchedulesAsync() => await GetListAsync<ScheduleItem>("api/schedules");
     public async Task<List<StatItem>> GetStatsAsync() => await GetListAsync<StatItem>("api/stats");
 
+    public async Task<List<StatItem>> GetStatsByGameAsync(int gameId)
+    {
+        var stats = await GetStatsAsync();
+        return stats.Where(s => s.GameId == gameId).ToList();
+    }
+
     public async Task<TeamItem> CreateTeamAsync(string name, string city, string coach)
         => await PostAsync<TeamItem>("api/teams", new TeamWriteRequest(name, city, coach));
 
