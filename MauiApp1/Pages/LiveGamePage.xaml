@@ -22,6 +22,7 @@
                     <Label Text="Score Keeping Mode" FontSize="26" FontAttributes="Bold" TextColor="#EFF6FF" />
                     <Label Text="Select a game and player, then tap stat buttons." TextColor="#B7CAE3" FontSize="13" />
                     <Label Text="{Binding StatusMessage}" TextColor="#89E4C8" FontSize="12" />
+                    <Label Text="{Binding LiveStateMessage}" TextColor="#B7CAE3" FontSize="12" />
                 </VerticalStackLayout>
             </Border>
 
@@ -33,6 +34,12 @@
                             ItemDisplayBinding="{Binding DisplayText}"
                             SelectedItem="{Binding SelectedGameOption}"
                             SelectedIndexChanged="OnGamePickerChanged" />
+
+                        <Label Text="No game is currently in session."
+                           FontSize="13"
+                           FontAttributes="Bold"
+                           TextColor="#8A2734"
+                           IsVisible="{Binding NoGameInSession}" />
 
                     <Border StrokeThickness="0"
                             BackgroundColor="#13203A"
@@ -67,7 +74,7 @@
                 </VerticalStackLayout>
             </Border>
 
-            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14" IsVisible="{Binding PlayerSelected}">
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14" IsVisible="{Binding PlayerSelected}" IsEnabled="{Binding SelectedGameInSession}">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Log Stat" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
 
@@ -102,7 +109,7 @@
                 </VerticalStackLayout>
             </Border>
 
-            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14" IsVisible="{Binding PlayerSelected}">
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14" IsVisible="{Binding PlayerSelected}" IsEnabled="{Binding SelectedGameInSession}">
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Session Stats" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
                     <Label Text="{Binding SessionStatsDisplay}" TextColor="#485D78" FontSize="13" />

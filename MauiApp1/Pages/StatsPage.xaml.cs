@@ -7,12 +7,27 @@ namespace MauiApp1.Pages;
 public partial class StatsPage : ContentPage
 {
     private readonly DatabaseService _db;
+    private readonly IDispatcherTimer _autoRefreshTimer;
     private bool _isWorking;
+    private readonly List<PlayerStatRow> _allHomeRows = new();
+    private readonly List<PlayerStatRow> _allAwayRows = new();
 
     public ObservableCollection<GameItem> Games { get; } = new();
     public ObservableCollection<GamePickerItem> GameOptions { get; } = new();
     public ObservableCollection<PlayerStatRow> HomePlayerStats { get; } = new();
     public ObservableCollection<PlayerStatRow> AwayPlayerStats { get; } = new();
+
+    private string _searchText = string.Empty;
+    public string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            _searchText = value ?? string.Empty;
+            OnPropertyChanged();
+            ApplySearchFilter();
+        }
+    }
 
     private GameItem? _selectedGame;
     public GameItem? SelectedGame
@@ -41,6 +56,31 @@ public partial class StatsPage : ContentPage
     public bool GameSelected => _selectedGame is not null;
     public bool HasStats => HomePlayerStats.Count > 0 || AwayPlayerStats.Count > 0;
     public bool CanRefresh => !IsWorking;
+
+    private bool _hasGameInSession;
+    public bool HasGameInSession
+    {
+        get => _hasGameInSession;
+        set
+        {
+            _hasGameInSession = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(NoGameInSession));
+        }
+    }
+
+    public bool NoGameInSession => !HasGameInSession;
+
+    private string _liveStateMessage = "Checking live game status...";
+    public string LiveStateMessage
+    {
+        get => _liveStateMessage;
+        set
+        {
+            _liveStateMessage = value;
+            OnPropertyChanged();
+        }
+    }
 
     public bool IsWorking
     {
@@ -148,6 +188,10 @@ public partial class StatsPage : ContentPage
             BaseAddress = new Uri("http://127.0.0.1:5117/")
         });
 
+        _autoRefreshTimer = Dispatcher.CreateTimer();
+        _autoRefreshTimer.Interval = TimeSpan.FromSeconds(5);
+        _autoRefreshTimer.Tick += OnAutoRefreshTick;
+
         InitializeComponent();
         BindingContext = this;
     }
@@ -155,7 +199,23 @@ public partial class StatsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+
+        if (!_autoRefreshTimer.IsRunning)
+        {
+            _autoRefreshTimer.Start();
+        }
+
         await LoadGamesAsync();
+    }
+
+    protected override void OnDisappearing()
+    {
+        if (_autoRefreshTimer.IsRunning)
+        {
+            _autoRefreshTimer.Stop();
+        }
+
+        base.OnDisappearing();
     }
 
     private async Task LoadGamesAsync()
@@ -186,6 +246,20 @@ public partial class StatsPage : ContentPage
                     Game = game,
                     DisplayText = BuildGameOptionLabel(homeName, awayName, game.GameDate)
                 });
+            }
+
+            var inSessionGame = games
+                .OrderByDescending(g => g.GameDate)
+                .FirstOrDefault(g => IsGameInSession(g.Status));
+
+            HasGameInSession = inSessionGame is not null;
+            LiveStateMessage = inSessionGame is null
+                ? "No game is currently in session. You can still review saved game stats."
+                : "Live game detected. Stats auto-refresh every 5 seconds.";
+
+            if (SelectedGame is null && inSessionGame is not null)
+            {
+                SelectedGameOption = GameOptions.FirstOrDefault(o => o.Game?.GameId == inSessionGame.GameId);
             }
 
             StatusMessage = $"Loaded {games.Count} games.";
@@ -229,6 +303,11 @@ public partial class StatsPage : ContentPage
         await LoadGameDataAsync();
     }
 
+    private void OnSearchChanged(object sender, TextChangedEventArgs e)
+    {
+        SearchText = e.NewTextValue ?? string.Empty;
+    }
+
     private async void OnRefreshClicked(object sender, EventArgs e)
     {
         if (_selectedGame is null)
@@ -267,26 +346,32 @@ public partial class StatsPage : ContentPage
             var homePlayers = allPlayers.Where(p => p.TeamId == _selectedGame.HomeTeamId).OrderBy(p => p.JerseyNumber).ThenBy(p => p.LastName).ToList();
             var awayPlayers = allPlayers.Where(p => p.TeamId == _selectedGame.AwayTeamId).OrderBy(p => p.JerseyNumber).ThenBy(p => p.LastName).ToList();
 
-            HomePlayerStats.Clear();
-            AwayPlayerStats.Clear();
+            _allHomeRows.Clear();
+            _allAwayRows.Clear();
 
             foreach (var player in homePlayers)
             {
                 var stat = stats.FirstOrDefault(x => x.PlayerId == player.PlayerId);
-                HomePlayerStats.Add(PlayerStatRow.From(player, stat));
+                _allHomeRows.Add(PlayerStatRow.From(player, stat, HomeTeamName));
             }
 
             foreach (var player in awayPlayers)
             {
                 var stat = stats.FirstOrDefault(x => x.PlayerId == player.PlayerId);
-                AwayPlayerStats.Add(PlayerStatRow.From(player, stat));
+                _allAwayRows.Add(PlayerStatRow.From(player, stat, AwayTeamName));
             }
+
+            ApplySearchFilter();
 
             HomeScore = _selectedGame.HomeScore ?? HomePlayerStats.Sum(r => r.Points);
             AwayScore = _selectedGame.AwayScore ?? AwayPlayerStats.Sum(r => r.Points);
 
             OnPropertyChanged(nameof(HasStats));
-            StatusMessage = $"Showing {stats.Count} stat records for this game.";
+
+            var liveNote = IsGameInSession(_selectedGame.Status)
+                ? "(live auto-refresh active)"
+                : "(not in session, showing latest saved data)";
+            StatusMessage = $"Showing {stats.Count} stat records for this game {liveNote}.";
         }
         catch (Exception ex)
         {
@@ -298,11 +383,83 @@ public partial class StatsPage : ContentPage
             IsWorking = false;
         }
     }
+
+    private void ApplySearchFilter()
+    {
+        var query = SearchText.Trim();
+
+        var homeRows = _allHomeRows
+            .Where(r => MatchesSearch(r, query))
+            .ToList();
+        var awayRows = _allAwayRows
+            .Where(r => MatchesSearch(r, query))
+            .ToList();
+
+        HomePlayerStats.Clear();
+        AwayPlayerStats.Clear();
+
+        foreach (var row in homeRows)
+        {
+            HomePlayerStats.Add(row);
+        }
+
+        foreach (var row in awayRows)
+        {
+            AwayPlayerStats.Add(row);
+        }
+
+        OnPropertyChanged(nameof(HasStats));
+    }
+
+    private static bool MatchesSearch(PlayerStatRow row, string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return true;
+        }
+
+        return row.PlayerName.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || row.TeamName.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || row.Points.ToString().Contains(query, StringComparison.OrdinalIgnoreCase)
+            || row.Rebounds.ToString().Contains(query, StringComparison.OrdinalIgnoreCase)
+            || row.Assists.ToString().Contains(query, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsGameInSession(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            return false;
+        }
+
+        var normalized = status.Trim();
+        return normalized.Equals("InProgress", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("In Progress", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("Live", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("In Session", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async void OnAutoRefreshTick(object? sender, EventArgs e)
+    {
+        if (IsWorking)
+        {
+            return;
+        }
+
+        if (SelectedGame is null)
+        {
+            await LoadGamesAsync();
+            return;
+        }
+
+        await LoadGameDataAsync();
+    }
 }
 
 public class PlayerStatRow
 {
     public string PlayerName { get; set; } = string.Empty;
+    public string TeamName { get; set; } = string.Empty;
     public int Points { get; set; }
     public int Rebounds { get; set; }
     public int Assists { get; set; }
@@ -310,9 +467,10 @@ public class PlayerStatRow
     public int Blocks { get; set; }
     public int Turnovers { get; set; }
 
-    public static PlayerStatRow From(PlayerItem player, StatItem? stat) => new()
+    public static PlayerStatRow From(PlayerItem player, StatItem? stat, string teamName) => new()
     {
         PlayerName = $"#{player.JerseyNumber} {player.FullName}",
+        TeamName = teamName,
         Points = stat?.TotalPoints ?? 0,
         Rebounds = (stat?.OffensiveRebounds ?? 0) + (stat?.DefensiveRebounds ?? 0),
         Assists = stat?.Assists ?? 0,

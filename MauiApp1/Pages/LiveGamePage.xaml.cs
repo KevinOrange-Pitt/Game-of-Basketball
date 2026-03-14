@@ -7,6 +7,7 @@ namespace MauiApp1.Pages;
 public partial class LiveGamePage : ContentPage
 {
     private readonly DatabaseService _db;
+    private readonly IDispatcherTimer _autoRefreshTimer;
     private bool _isWorking;
 
     private int _twoPtMade;
@@ -36,6 +37,8 @@ public partial class LiveGamePage : ContentPage
             _selectedGame = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(GameSelected));
+            OnPropertyChanged(nameof(SelectedGameInSession));
+            OnPropertyChanged(nameof(CanSave));
         }
     }
 
@@ -67,8 +70,34 @@ public partial class LiveGamePage : ContentPage
 
     public bool GameSelected => _selectedGame is not null;
     public bool PlayerSelected => _selectedPlayer is not null;
+    public bool SelectedGameInSession => _selectedGame is not null && IsGameInSession(_selectedGame.Status);
     public bool CanUndo => _undoStack.Count > 0;
-    public bool CanSave => _selectedPlayer is not null && !IsWorking;
+    public bool CanSave => _selectedPlayer is not null && SelectedGameInSession && !IsWorking;
+
+    private bool _hasGameInSession;
+    public bool HasGameInSession
+    {
+        get => _hasGameInSession;
+        set
+        {
+            _hasGameInSession = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(NoGameInSession));
+        }
+    }
+
+    public bool NoGameInSession => !HasGameInSession;
+
+    private string _liveStateMessage = "Checking live game status...";
+    public string LiveStateMessage
+    {
+        get => _liveStateMessage;
+        set
+        {
+            _liveStateMessage = value;
+            OnPropertyChanged();
+        }
+    }
 
     public bool IsWorking
     {
@@ -152,6 +181,10 @@ public partial class LiveGamePage : ContentPage
             BaseAddress = new Uri("http://127.0.0.1:5117/")
         });
 
+        _autoRefreshTimer = Dispatcher.CreateTimer();
+        _autoRefreshTimer.Interval = TimeSpan.FromSeconds(5);
+        _autoRefreshTimer.Tick += OnAutoRefreshTick;
+
         InitializeComponent();
         BindingContext = this;
     }
@@ -159,7 +192,23 @@ public partial class LiveGamePage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+
+        if (!_autoRefreshTimer.IsRunning)
+        {
+            _autoRefreshTimer.Start();
+        }
+
         await LoadGamesAsync();
+    }
+
+    protected override void OnDisappearing()
+    {
+        if (_autoRefreshTimer.IsRunning)
+        {
+            _autoRefreshTimer.Stop();
+        }
+
+        base.OnDisappearing();
     }
 
     private async Task LoadGamesAsync()
@@ -190,6 +239,20 @@ public partial class LiveGamePage : ContentPage
                     Game = game,
                     DisplayText = BuildGameOptionLabel(homeName, awayName, game.GameDate)
                 });
+            }
+
+            var inSessionGame = games
+                .OrderByDescending(g => g.GameDate)
+                .FirstOrDefault(g => IsGameInSession(g.Status));
+
+            HasGameInSession = inSessionGame is not null;
+            LiveStateMessage = inSessionGame is null
+                ? "No game is currently in session. Select a game to review scores only."
+                : "Live game detected. Scores auto-refresh every 5 seconds.";
+
+            if (SelectedGame is null && inSessionGame is not null)
+            {
+                SelectedGameOption = GameOptions.FirstOrDefault(o => o.Game?.GameId == inSessionGame.GameId);
             }
 
             StatusMessage = $"Loaded {games.Count} games.";
@@ -254,7 +317,14 @@ public partial class LiveGamePage : ContentPage
             await RefreshScoresAsync();
 
             SelectedPlayer = null;
-            StatusMessage = $"Game loaded: {gamePlayers.Count} players available.";
+            if (SelectedGameInSession)
+            {
+                StatusMessage = $"Game loaded: {gamePlayers.Count} players available.";
+            }
+            else
+            {
+                StatusMessage = "Selected game is not currently in session. Logging is disabled.";
+            }
         }
         catch (Exception ex)
         {
@@ -334,6 +404,12 @@ public partial class LiveGamePage : ContentPage
             return;
         }
 
+        if (!SelectedGameInSession)
+        {
+            StatusMessage = "Logging is disabled because this game is not in session.";
+            return;
+        }
+
         apply();
         _undoStack.Push(undo);
         StatusMessage = $"Logged {label}.";
@@ -373,6 +449,12 @@ public partial class LiveGamePage : ContentPage
     {
         if (_selectedPlayer is null || _selectedGame is null)
         {
+            return;
+        }
+
+        if (!SelectedGameInSession)
+        {
+            StatusMessage = "Cannot save: selected game is not in session.";
             return;
         }
 
@@ -471,5 +553,40 @@ public partial class LiveGamePage : ContentPage
         OnPropertyChanged(nameof(SessionStatsDisplay));
         OnPropertyChanged(nameof(CanUndo));
         OnPropertyChanged(nameof(CanSave));
+    }
+
+    private static bool IsGameInSession(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            return false;
+        }
+
+        var normalized = status.Trim();
+        return normalized.Equals("InProgress", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("In Progress", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("Live", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("In Session", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async void OnAutoRefreshTick(object? sender, EventArgs e)
+    {
+        if (IsWorking)
+        {
+            return;
+        }
+
+        if (SelectedGame is null)
+        {
+            await LoadGamesAsync();
+            return;
+        }
+
+        if (SelectedGameInSession)
+        {
+            await RefreshScoresAsync();
+        }
+
+        await LoadGamesAsync();
     }
 }

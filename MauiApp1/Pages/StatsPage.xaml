@@ -49,6 +49,18 @@
                                 IsEnabled="{Binding CanRefresh}" />
                     </Grid>
 
+                    <Entry Placeholder="Search player/team/stats"
+                           Text="{Binding SearchText}"
+                           TextChanged="OnSearchChanged"
+                              TextColor="#172A45"
+                              PlaceholderColor="#6B7D94"
+                              BackgroundColor="#FFFFFF"
+                           ClearButtonVisibility="WhileEditing" />
+
+                    <Label Text="{Binding LiveStateMessage}"
+                           FontSize="12"
+                           TextColor="#245F4E" />
+
                     <Border StrokeThickness="0" BackgroundColor="#13203A" Padding="12" StrokeShape="RoundRectangle 10" IsVisible="{Binding GameSelected}">
                         <VerticalStackLayout Spacing="6">
                             <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="8">
@@ -72,6 +84,12 @@
                             <Label Text="{Binding GameStatus}" TextColor="#8DE6CB" FontSize="12" />
                         </VerticalStackLayout>
                     </Border>
+
+                    <Label Text="No game is currently in session."
+                           FontSize="13"
+                           FontAttributes="Bold"
+                           TextColor="#8A2734"
+                           IsVisible="{Binding NoGameInSession}" />
                 </VerticalStackLayout>
             </Border>
 
