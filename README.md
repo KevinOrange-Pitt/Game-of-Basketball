@@ -111,3 +111,13 @@ Expected result:
 - Check DB auth details quickly: open `http://127.0.0.1:5117/api/db-health`.
 - `No records found`: insert one row into `dbo.Players`.
 - API not healthy on port `5117`: ensure port is free.
+
+## Unit Tests
+
+The `GobTrackerApi.Tests` project contains unit tests that validate API input validation logic across all endpoints (teams, players, games, schedules, and stats). The tests use `WebApplicationFactory` to spin up the API in-memory — no database connection required.
+
+To build and run all tests:
+
+```bash
+dotnet test --verbosity normal
+```

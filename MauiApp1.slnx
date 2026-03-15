@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="GobTrackerApi.Tests/GobTrackerApi.Tests.csproj" />
   <Project Path="GobTrackerApi/GobTrackerApi.csproj" />
 </Solution>

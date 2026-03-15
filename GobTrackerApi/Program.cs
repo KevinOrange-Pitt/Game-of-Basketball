@@ -1397,3 +1397,5 @@ public record GameWriteDto(int HomeTeamId, int AwayTeamId, DateTime GameDate, st
 
 public record ScheduleDto(int ScheduleId, int TeamId, int GameId, bool IsHome, DateTime CreatedAt);
 public record ScheduleWriteDto(int TeamId, int GameId, bool IsHome);
+
+public partial class Program { }
