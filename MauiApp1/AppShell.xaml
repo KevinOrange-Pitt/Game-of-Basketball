@@ -38,4 +38,19 @@
         Route="stats"
         ContentTemplate="{DataTemplate pages:StatsPage}" />
 
+    <ShellContent
+        Title="Score Keeping"
+        ContentTemplate="{DataTemplate local:ScoreKeepingPage}"
+        Route="ScoreKeepingPage" />
+
+    <ShellContent
+        Title="Game View"
+        ContentTemplate="{DataTemplate local:GameViewPage}"
+        Route="GameViewPage" />
+
+    <ShellContent
+        Title="Stats"
+        ContentTemplate="{DataTemplate local:StatModePage}"
+        Route="StatModePage" />
+
 </Shell>

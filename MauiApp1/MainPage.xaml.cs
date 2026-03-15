@@ -873,4 +873,13 @@ public partial class MainPage : ContentPage
         OnPropertyChanged(nameof(CanUpdateGame));
         OnPropertyChanged(nameof(CanUpdateSchedule));
     }
+
+    private async void OnGoToScoreKeepingClicked(object sender, EventArgs e)
+    => await Shell.Current.GoToAsync("ScoreKeepingPage");
+
+    private async void OnGoToGameViewClicked(object sender, EventArgs e)
+        => await Shell.Current.GoToAsync("GameViewPage");
+
+    private async void OnGoToStatsClicked(object sender, EventArgs e)
+        => await Shell.Current.GoToAsync("StatModePage");
 }
