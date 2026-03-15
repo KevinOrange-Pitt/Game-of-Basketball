@@ -70,6 +70,7 @@ public class StatItem
     public DateTime CreatedAt { get; set; }
 
     public int TotalPoints => (TwoPtMade * 2) + (ThreePtMade * 3);
+    public int TotalRebounds => OffensiveRebounds + DefensiveRebounds;
     public string Display => $"Stat {StatId}: G{GameId} P{PlayerId} {TotalPoints} pts";
 }
 
@@ -77,26 +78,4 @@ public class GamePickerItem
 {
     public GameItem? Game { get; set; }
     public string DisplayText { get; set; } = string.Empty;
-}
-
-public class StatItem
-{
-    public int StatId { get; set; }
-    public int GameId { get; set; }
-    public int PlayerId { get; set; }
-    public int TwoPtMiss { get; set; }
-    public int TwoPtMade { get; set; }
-    public int ThreePtMiss { get; set; }
-    public int ThreePtMade { get; set; }
-    public int Steals { get; set; }
-    public int Turnovers { get; set; }
-    public int Assists { get; set; }
-    public int Blocks { get; set; }
-    public int Fouls { get; set; }
-    public int OffensiveRebounds { get; set; }
-    public int DefensiveRebounds { get; set; }
-    public DateTime CreatedAt { get; set; }
-
-    public int TotalPoints => (TwoPtMade * 2) + (ThreePtMade * 3);
-    public int TotalRebounds => OffensiveRebounds + DefensiveRebounds;
 }
