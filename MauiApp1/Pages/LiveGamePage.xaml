@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:MauiApp1.Controls"
+             x:Class="MauiApp1.Pages.LiveGamePage"
+             Shell.TabBarIsVisible="False"
+             Title="Live Game">
+
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#0E1628" Offset="0.0" />
+            <GradientStop Color="#1B2C48" Offset="0.6" />
+            <GradientStop Color="#24416B" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <Grid RowDefinitions="*,Auto">
+    <ScrollView Grid.Row="0">
+        <VerticalStackLayout Padding="16,18" Spacing="12">
+            <Border StrokeThickness="0" BackgroundColor="#13203A" Padding="14" StrokeShape="RoundRectangle 14">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Score Keeping Mode" FontSize="26" FontAttributes="Bold" TextColor="#EFF6FF" />
+                    <Label Text="Select a game and player, then tap stat buttons." TextColor="#B7CAE3" FontSize="13" />
+                    <Label Text="{Binding StatusMessage}" TextColor="#89E4C8" FontSize="12" />
+                    <Label Text="{Binding LiveStateMessage}" TextColor="#B7CAE3" FontSize="12" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Select Game" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
+                    <Picker Title="-- Pick a game --"
+                            ItemsSource="{Binding GameOptions}"
+                            ItemDisplayBinding="{Binding DisplayText}"
+                            SelectedItem="{Binding SelectedGameOption}"
+                            SelectedIndexChanged="OnGamePickerChanged" />
+
+                                <Label Text="No game is currently in session. You can still select a game."
+                           FontSize="13"
+                           FontAttributes="Bold"
+                           TextColor="#8A2734"
+                           IsVisible="{Binding NoGameInSession}" />
+
+                    <Border StrokeThickness="0"
+                            BackgroundColor="#13203A"
+                            Padding="12"
+                            StrokeShape="RoundRectangle 10"
+                            IsVisible="{Binding GameSelected}">
+                        <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="8">
+                            <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center">
+                                <Label Text="{Binding HomeTeamName}" TextColor="#B7CAE3" FontSize="12" HorizontalOptions="Center" />
+                                <Label Text="{Binding HomeScore}" FontSize="38" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center" />
+                            </VerticalStackLayout>
+
+                            <Label Grid.Column="1" Text="vs" FontSize="20" TextColor="#7D91AB" VerticalOptions="Center" />
+
+                            <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center">
+                                <Label Text="{Binding AwayTeamName}" TextColor="#B7CAE3" FontSize="12" HorizontalOptions="Center" />
+                                <Label Text="{Binding AwayScore}" FontSize="38" FontAttributes="Bold" TextColor="White" HorizontalOptions="Center" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14" IsVisible="{Binding GameSelected}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Select Player" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
+                    <Picker Title="-- Pick a player --"
+                            ItemsSource="{Binding GamePlayers}"
+                            ItemDisplayBinding="{Binding FullName}"
+                            SelectedItem="{Binding SelectedPlayer}" />
+                    <Label Text="{Binding SelectedPlayerDisplay}" TextColor="#1F3C66" FontSize="13" FontAttributes="Bold" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14" IsVisible="{Binding PlayerSelected}" IsEnabled="{Binding GameSelected}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Log Stat" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
+
+                    <Label Text="Points" FontSize="13" TextColor="#5B6470" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" Text="2pt Made" Clicked="On2ptMadeClicked" BackgroundColor="#1FA774" TextColor="White" FontSize="16" HeightRequest="56" />
+                        <Button Grid.Column="1" Text="2pt Miss" Clicked="On2ptMissClicked" BackgroundColor="#E4555F" TextColor="White" FontSize="16" HeightRequest="56" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" Text="3pt Made" Clicked="On3ptMadeClicked" BackgroundColor="#1FA774" TextColor="White" FontSize="16" HeightRequest="56" />
+                        <Button Grid.Column="1" Text="3pt Miss" Clicked="On3ptMissClicked" BackgroundColor="#E4555F" TextColor="White" FontSize="16" HeightRequest="56" />
+                    </Grid>
+
+                    <Label Text="Other" FontSize="13" TextColor="#5B6470" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" Text="Steal" Clicked="OnStealClicked" BackgroundColor="#2F80ED" TextColor="White" FontSize="15" HeightRequest="52" />
+                        <Button Grid.Column="1" Text="Assist" Clicked="OnAssistClicked" BackgroundColor="#2F80ED" TextColor="White" FontSize="15" HeightRequest="52" />
+                        <Button Grid.Column="2" Text="Block" Clicked="OnBlockClicked" BackgroundColor="#2F80ED" TextColor="White" FontSize="15" HeightRequest="52" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" Text="Off Reb" Clicked="OnOffRebClicked" BackgroundColor="#7B5EA7" TextColor="White" FontSize="15" HeightRequest="52" />
+                        <Button Grid.Column="1" Text="Def Reb" Clicked="OnDefRebClicked" BackgroundColor="#7B5EA7" TextColor="White" FontSize="15" HeightRequest="52" />
+                        <Button Grid.Column="2" Text="Turnover" Clicked="OnTurnoverClicked" BackgroundColor="#F5B83D" TextColor="#2B2B2B" FontSize="15" HeightRequest="52" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" Text="Foul" Clicked="OnFoulClicked" BackgroundColor="#E4555F" TextColor="White" FontSize="15" HeightRequest="52" />
+                        <Button Grid.Column="1" Text="Undo Last" Clicked="OnUndoClicked" BackgroundColor="#6A7685" TextColor="White" FontSize="15" HeightRequest="52" IsEnabled="{Binding CanUndo}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14" IsVisible="{Binding PlayerSelected}" IsEnabled="{Binding GameSelected}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Session Stats" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
+                    <Label Text="{Binding SessionStatsDisplay}" TextColor="#485D78" FontSize="13" />
+                    <Button Text="Save Stats" Clicked="OnSaveStatsClicked" BackgroundColor="#1FA774" TextColor="White" FontSize="16" HeightRequest="52" IsEnabled="{Binding CanSave}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <ActivityIndicator IsRunning="{Binding IsWorking}" IsVisible="{Binding IsWorking}" Color="White" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+    <controls:BottomNavBar Grid.Row="1" CurrentRoute="livegame" />
+    </Grid>
+</ContentPage>

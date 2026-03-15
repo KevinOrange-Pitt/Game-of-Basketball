@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:MauiApp1.Controls"
+             x:Class="MauiApp1.Pages.DashboardPage"
+             Shell.TabBarIsVisible="False"
+             Title="Dashboard">
+
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#1E293B" Offset="0" />
+            <GradientStop Color="#334155" Offset="1" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <Grid RowDefinitions="*,Auto">
+    <ScrollView Grid.Row="0">
+        <VerticalStackLayout Padding="18" Spacing="14">
+            <Border StrokeThickness="0" BackgroundColor="#0F172A" Padding="16" StrokeShape="RoundRectangle 16">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Team Dashboard" TextColor="#E2E8F0" FontSize="30" FontAttributes="Bold" />
+                    <Label Text="{Binding TeamHeader}" TextColor="#CBD5E1" />
+                    <Label Text="{Binding NextGameText}" TextColor="#F97316" FontAttributes="Bold" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Border Grid.Column="0" StrokeThickness="0" BackgroundColor="#F8FAFC" Padding="14" StrokeShape="RoundRectangle 14">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Recent Games" FontSize="19" FontAttributes="Bold" TextColor="#0F172A" />
+                        <CollectionView ItemsSource="{Binding RecentGames}" HeightRequest="170">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="10" Margin="0,0,0,6" StrokeShape="RoundRectangle 10">
+                                        <Label Text="{Binding}" TextColor="#334155" />
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Column="1" StrokeThickness="0" BackgroundColor="#F8FAFC" Padding="14" StrokeShape="RoundRectangle 14">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Selected Team Stats" FontSize="19" FontAttributes="Bold" TextColor="#0F172A" />
+
+                        <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="10" StrokeShape="RoundRectangle 10">
+                            <Label Text="{Binding TeamGamesPlayed}" TextColor="#334155" />
+                        </Border>
+
+                        <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="10" StrokeShape="RoundRectangle 10">
+                            <Label Text="{Binding TeamRecord}" TextColor="#334155" />
+                        </Border>
+
+                        <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="10" StrokeShape="RoundRectangle 10">
+                            <Label Text="{Binding TeamAvgPoints}" TextColor="#334155" />
+                        </Border>
+
+                        <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="10" StrokeShape="RoundRectangle 10">
+                            <Label Text="{Binding TeamAvgAllowed}" TextColor="#334155" />
+                        </Border>
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+        </VerticalStackLayout>
+    </ScrollView>
+
+    <controls:BottomNavBar Grid.Row="1" CurrentRoute="dashboard" />
+    </Grid>
+
+</ContentPage>

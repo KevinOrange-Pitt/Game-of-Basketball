@@ -9,216 +9,282 @@
             <Setter Property="PlaceholderColor" Value="#5B6470" />
             <Setter Property="BackgroundColor" Value="#FFFFFF" />
         </Style>
+
+        <Style x:Key="CardTitleStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="TextColor" Value="#172A45" />
+        </Style>
+
+        <Style x:Key="MiniRefreshStyle" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="#E3EEFF" />
+            <Setter Property="TextColor" Value="#1F3C66" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="CornerRadius" Value="10" />
+        </Style>
     </ContentPage.Resources>
 
     <ContentPage.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#0E1628" Offset="0.0" />
-            <GradientStop Color="#1B2C48" Offset="0.6" />
-            <GradientStop Color="#24416B" Offset="1.0" />
+            <GradientStop Color="#0D1B2A" Offset="0.0" />
+            <GradientStop Color="#1B3358" Offset="0.55" />
+            <GradientStop Color="#2A4E78" Offset="1.0" />
         </LinearGradientBrush>
     </ContentPage.Background>
 
     <ScrollView>
-        <VerticalStackLayout Padding="18,22" Spacing="14">
-            <Border StrokeThickness="0" BackgroundColor="#13203A" Padding="16" StrokeShape="RoundRectangle 16">
-                <VerticalStackLayout Spacing="4">
-                    <Label Text="League Control Center" FontSize="30" FontAttributes="Bold" TextColor="#EFF6FF" />
-                    <Label Text="Manage Teams, Players, Games, and Schedules from one dashboard." TextColor="#B7CAE3" />
-                    <Label Text="{Binding StatusMessage}" TextColor="#89E4C8" FontSize="13" />
+        <VerticalStackLayout Padding="20,22" Spacing="14">
+            <Border StrokeThickness="0" BackgroundColor="#13203A" Padding="18" StrokeShape="RoundRectangle 18">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="League Control Center" FontSize="32" FontAttributes="Bold" TextColor="#EFF6FF" />
+                    <Label Text="Manage teams, players, games, and schedules from a cleaner command board." TextColor="#B7CAE3" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <Label Grid.Column="0" Text="Live Status" TextColor="#D8E8FF" FontAttributes="Bold" FontSize="12" />
+                        <Label Grid.Column="1" Text="{Binding StatusMessage}" TextColor="#89E4C8" FontSize="13" />
+                    </Grid>
                 </VerticalStackLayout>
             </Border>
 
-            <Button Text="Refresh Everything"
-                    Clicked="OnRefreshAllClicked"
-                    IsEnabled="{Binding CanRefreshAll}"
-                    BackgroundColor="#2F80ED"
-                    TextColor="White" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <Border Grid.Column="0" StrokeThickness="0" BackgroundColor="#0E2847" Padding="12" StrokeShape="RoundRectangle 12">
+                    <Label Text="Tip: select a record to auto-fill update fields, then use Update/Delete." TextColor="#C7DAF5" FontSize="12" />
+                </Border>
 
-            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14">
-                <VerticalStackLayout Spacing="10">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <Label Grid.Column="0" Text="Teams" FontSize="19" FontAttributes="Bold" TextColor="#172A45" />
-                        <Button Grid.Column="1" Text="Refresh" Clicked="OnRefreshTeamsClicked" IsEnabled="{Binding CanRefreshAll}" BackgroundColor="#E3EEFF" TextColor="#1F3C66" />
-                    </Grid>
+                <Button Grid.Column="1"
+                        Text="Refresh All"
+                        Clicked="OnRefreshAllClicked"
+                        IsEnabled="{Binding CanRefreshAll}"
+                        BackgroundColor="#2F80ED"
+                        TextColor="White"
+                        CornerRadius="12"
+                        Padding="18,12" />
+            </Grid>
 
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                        <Entry Grid.Column="0" Placeholder="Team name" Text="{Binding TeamNameInput}" />
-                        <Entry Grid.Column="1" Placeholder="City" Text="{Binding TeamCityInput}" />
-                    </Grid>
-                    <Entry Placeholder="Coach" Text="{Binding TeamCoachInput}" />
-                          <Label Text="Team Id is auto-generated when you create a team."
-                              FontSize="12"
-                              TextColor="#5B6470" />
-                          <Label Text="{Binding SelectedTeamIdDisplay}"
-                              FontSize="12"
-                              TextColor="#1F3C66"
-                              FontAttributes="Bold" />
+            <FlexLayout Wrap="Wrap"
+                        Direction="Row"
+                        JustifyContent="SpaceBetween"
+                        AlignItems="Start">
 
-                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="7">
-                        <Button Grid.Column="0" Text="Create" Clicked="OnCreateTeamClicked" IsEnabled="{Binding CanCreate}" BackgroundColor="#1FA774" TextColor="White" />
-                        <Button Grid.Column="1" Text="Update" Clicked="OnUpdateTeamClicked" IsEnabled="{Binding CanUpdateTeam}" BackgroundColor="#F5B83D" TextColor="#2B2B2B" />
-                        <Button Grid.Column="2" Text="Delete" Clicked="OnDeleteTeamClicked" IsEnabled="{Binding CanUpdateTeam}" BackgroundColor="#E4555F" TextColor="White" />
-                        <Button Grid.Column="3" Text="Clear" Clicked="OnClearTeamClicked" BackgroundColor="#6A7685" TextColor="White" />
-                    </Grid>
+                <Border FlexLayout.Basis="530"
+                        FlexLayout.Grow="1"
+                        FlexLayout.Shrink="1"
+                        StrokeThickness="0"
+                        BackgroundColor="#F9FBFF"
+                        Padding="14"
+                        Margin="0,0,10,12"
+                        StrokeShape="RoundRectangle 14">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Label Grid.Column="0" Text="Teams" Style="{StaticResource CardTitleStyle}" />
+                            <Button Grid.Column="1" Text="Refresh" Clicked="OnRefreshTeamsClicked" IsEnabled="{Binding CanRefreshAll}" Style="{StaticResource MiniRefreshStyle}" />
+                        </Grid>
 
-                    <CollectionView x:Name="TeamsCollection"
-                                    HeightRequest="180"
-                                    ItemsSource="{Binding Teams}"
-                                    SelectionMode="Single"
-                                    SelectionChanged="OnTeamSelectionChanged">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Border Stroke="#DDE6F3" StrokeThickness="1" BackgroundColor="White" Padding="10" Margin="0,0,0,6" StrokeShape="RoundRectangle 10">
-                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="3">
-                                        <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontAttributes="Bold" TextColor="#12335A" />
-                                        <Label Grid.Row="0" Grid.Column="1" Text="{Binding TeamId, StringFormat='Id {0}'}" TextColor="#7D91AB" FontSize="12" />
-                                        <Label Grid.Row="1" Grid.Column="0" Text="{Binding City}" TextColor="#485D78" />
-                                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding Coach}" TextColor="#485D78" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </VerticalStackLayout>
-            </Border>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Entry Grid.Column="0" Placeholder="Team name" Text="{Binding TeamNameInput}" />
+                            <Entry Grid.Column="1" Placeholder="City" Text="{Binding TeamCityInput}" />
+                        </Grid>
 
-            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14">
-                <VerticalStackLayout Spacing="10">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <Label Grid.Column="0" Text="Players" FontSize="19" FontAttributes="Bold" TextColor="#172A45" />
-                        <Button Grid.Column="1" Text="Refresh" Clicked="OnRefreshPlayersClicked" IsEnabled="{Binding CanRefreshAll}" BackgroundColor="#E3EEFF" TextColor="#1F3C66" />
-                    </Grid>
+                        <Entry Placeholder="Coach" Text="{Binding TeamCoachInput}" />
 
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                        <Entry Grid.Column="0" Placeholder="Team Id (select a team above)" Keyboard="Numeric" Text="{Binding PlayerTeamIdInput}" />
-                        <Entry Grid.Column="1" Placeholder="Jersey # (optional)" Keyboard="Numeric" Text="{Binding PlayerJerseyInput}" />
-                    </Grid>
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                        <Entry Grid.Column="0" Placeholder="First name" Text="{Binding PlayerFirstNameInput}" />
-                        <Entry Grid.Column="1" Placeholder="Last name" Text="{Binding PlayerLastNameInput}" />
-                    </Grid>
-                    <Entry Placeholder="Position (optional)" Text="{Binding PlayerPositionInput}" />
+                        <Label Text="Team Id is auto-generated when you create a team."
+                               FontSize="12"
+                               TextColor="#5B6470" />
 
-                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="7">
-                        <Button Grid.Column="0" Text="Create" Clicked="OnCreatePlayerClicked" IsEnabled="{Binding CanCreate}" BackgroundColor="#1FA774" TextColor="White" />
-                        <Button Grid.Column="1" Text="Update" Clicked="OnUpdatePlayerClicked" IsEnabled="{Binding CanUpdatePlayer}" BackgroundColor="#F5B83D" TextColor="#2B2B2B" />
-                        <Button Grid.Column="2" Text="Delete" Clicked="OnDeletePlayerClicked" IsEnabled="{Binding CanUpdatePlayer}" BackgroundColor="#E4555F" TextColor="White" />
-                        <Button Grid.Column="3" Text="Clear" Clicked="OnClearPlayerClicked" BackgroundColor="#6A7685" TextColor="White" />
-                    </Grid>
+                        <Label Text="{Binding SelectedTeamIdDisplay}"
+                               FontSize="12"
+                               TextColor="#1F3C66"
+                               FontAttributes="Bold" />
 
-                    <CollectionView x:Name="PlayersCollection"
-                                    HeightRequest="190"
-                                    ItemsSource="{Binding Players}"
-                                    SelectionMode="Single"
-                                    SelectionChanged="OnPlayerSelectionChanged">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Border Stroke="#DDE6F3" StrokeThickness="1" BackgroundColor="White" Padding="10" Margin="0,0,0,6" StrokeShape="RoundRectangle 10">
-                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="3">
-                                        <Label Grid.Row="0" Grid.Column="0" Text="{Binding FullName}" FontAttributes="Bold" TextColor="#12335A" />
-                                        <Label Grid.Row="0" Grid.Column="1" Text="{Binding PlayerId, StringFormat='Id {0}'}" TextColor="#7D91AB" FontSize="12" />
-                                        <Label Grid.Row="1" Grid.Column="0" Text="{Binding TeamDisplay}" TextColor="#485D78" />
-                                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding Position}" TextColor="#485D78" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </VerticalStackLayout>
-            </Border>
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="7">
+                            <Button Grid.Column="0" Text="Create" Clicked="OnCreateTeamClicked" IsEnabled="{Binding CanCreate}" BackgroundColor="#1FA774" TextColor="White" />
+                            <Button Grid.Column="1" Text="Update" Clicked="OnUpdateTeamClicked" IsEnabled="{Binding CanUpdateTeam}" BackgroundColor="#F5B83D" TextColor="#2B2B2B" />
+                            <Button Grid.Column="2" Text="Delete" Clicked="OnDeleteTeamClicked" IsEnabled="{Binding CanUpdateTeam}" BackgroundColor="#E4555F" TextColor="White" />
+                            <Button Grid.Column="3" Text="Clear" Clicked="OnClearTeamClicked" BackgroundColor="#6A7685" TextColor="White" />
+                        </Grid>
 
-            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14">
-                <VerticalStackLayout Spacing="10">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <Label Grid.Column="0" Text="Games" FontSize="19" FontAttributes="Bold" TextColor="#172A45" />
-                        <Button Grid.Column="1" Text="Refresh" Clicked="OnRefreshGamesClicked" IsEnabled="{Binding CanRefreshAll}" BackgroundColor="#E3EEFF" TextColor="#1F3C66" />
-                    </Grid>
+                        <CollectionView x:Name="TeamsCollection"
+                                        HeightRequest="185"
+                                        ItemsSource="{Binding Teams}"
+                                        SelectionMode="Single"
+                                        SelectionChanged="OnTeamSelectionChanged">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Stroke="#DDE6F3" StrokeThickness="1" BackgroundColor="White" Padding="10" Margin="0,0,0,6" StrokeShape="RoundRectangle 10">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="3">
+                                            <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontAttributes="Bold" TextColor="#12335A" />
+                                            <Label Grid.Row="0" Grid.Column="1" Text="{Binding TeamId, StringFormat='Id {0}'}" TextColor="#7D91AB" FontSize="12" />
+                                            <Label Grid.Row="1" Grid.Column="0" Text="{Binding City}" TextColor="#485D78" />
+                                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding Coach}" TextColor="#485D78" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Border>
 
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                        <Entry Grid.Column="0" Placeholder="Home Team Id" Keyboard="Numeric" Text="{Binding GameHomeTeamIdInput}" />
-                        <Entry Grid.Column="1" Placeholder="Away Team Id" Keyboard="Numeric" Text="{Binding GameAwayTeamIdInput}" />
-                    </Grid>
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                        <Entry Grid.Column="0" Placeholder="Game Date (yyyy-MM-dd HH:mm)" Text="{Binding GameDateInput}" />
-                        <Entry Grid.Column="1" Placeholder="Location" Text="{Binding GameLocationInput}" />
-                    </Grid>
-                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
-                        <Entry Grid.Column="0" Placeholder="Home Score" Keyboard="Numeric" Text="{Binding GameHomeScoreInput}" />
-                        <Entry Grid.Column="1" Placeholder="Away Score" Keyboard="Numeric" Text="{Binding GameAwayScoreInput}" />
-                        <Entry Grid.Column="2" Placeholder="Status" Text="{Binding GameStatusInput}" />
-                    </Grid>
+                <Border FlexLayout.Basis="530"
+                        FlexLayout.Grow="1"
+                        FlexLayout.Shrink="1"
+                        StrokeThickness="0"
+                        BackgroundColor="#F9FBFF"
+                        Padding="14"
+                        Margin="0,0,0,12"
+                        StrokeShape="RoundRectangle 14">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Label Grid.Column="0" Text="Players" Style="{StaticResource CardTitleStyle}" />
+                            <Button Grid.Column="1" Text="Refresh" Clicked="OnRefreshPlayersClicked" IsEnabled="{Binding CanRefreshAll}" Style="{StaticResource MiniRefreshStyle}" />
+                        </Grid>
 
-                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="7">
-                        <Button Grid.Column="0" Text="Create" Clicked="OnCreateGameClicked" IsEnabled="{Binding CanCreate}" BackgroundColor="#1FA774" TextColor="White" />
-                        <Button Grid.Column="1" Text="Update" Clicked="OnUpdateGameClicked" IsEnabled="{Binding CanUpdateGame}" BackgroundColor="#F5B83D" TextColor="#2B2B2B" />
-                        <Button Grid.Column="2" Text="Delete" Clicked="OnDeleteGameClicked" IsEnabled="{Binding CanUpdateGame}" BackgroundColor="#E4555F" TextColor="White" />
-                        <Button Grid.Column="3" Text="Clear" Clicked="OnClearGameClicked" BackgroundColor="#6A7685" TextColor="White" />
-                    </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Entry Grid.Column="0" Placeholder="Team Id (select a team above)" Keyboard="Numeric" Text="{Binding PlayerTeamIdInput}" />
+                            <Entry Grid.Column="1" Placeholder="Jersey # (optional)" Keyboard="Numeric" Text="{Binding PlayerJerseyInput}" />
+                        </Grid>
 
-                    <CollectionView x:Name="GamesCollection"
-                                    HeightRequest="190"
-                                    ItemsSource="{Binding Games}"
-                                    SelectionMode="Single"
-                                    SelectionChanged="OnGameSelectionChanged">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Border Stroke="#DDE6F3" StrokeThickness="1" BackgroundColor="White" Padding="10" Margin="0,0,0,6" StrokeShape="RoundRectangle 10">
-                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="3">
-                                        <Label Grid.Row="0" Grid.Column="0" Text="{Binding Matchup}" FontAttributes="Bold" TextColor="#12335A" />
-                                        <Label Grid.Row="0" Grid.Column="1" Text="{Binding GameId, StringFormat='Id {0}'}" TextColor="#7D91AB" FontSize="12" />
-                                        <Label Grid.Row="1" Grid.Column="0" Text="{Binding Score}" TextColor="#485D78" />
-                                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding Status}" TextColor="#485D78" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </VerticalStackLayout>
-            </Border>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Entry Grid.Column="0" Placeholder="First name" Text="{Binding PlayerFirstNameInput}" />
+                            <Entry Grid.Column="1" Placeholder="Last name" Text="{Binding PlayerLastNameInput}" />
+                        </Grid>
 
-            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14">
-                <VerticalStackLayout Spacing="10">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <Label Grid.Column="0" Text="Schedules" FontSize="19" FontAttributes="Bold" TextColor="#172A45" />
-                        <Button Grid.Column="1" Text="Refresh" Clicked="OnRefreshSchedulesClicked" IsEnabled="{Binding CanRefreshAll}" BackgroundColor="#E3EEFF" TextColor="#1F3C66" />
-                    </Grid>
+                        <Entry Placeholder="Position (optional)" Text="{Binding PlayerPositionInput}" />
 
-                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
-                        <Entry Grid.Column="0" Placeholder="Team Id (select a team above)" Keyboard="Numeric" Text="{Binding ScheduleTeamIdInput}" />
-                        <Entry Grid.Column="1" Placeholder="Game Id" Keyboard="Numeric" Text="{Binding ScheduleGameIdInput}" />
-                        <Entry Grid.Column="2" Placeholder="Is Home (true/false)" Text="{Binding ScheduleIsHomeInput}" />
-                    </Grid>
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="7">
+                            <Button Grid.Column="0" Text="Create" Clicked="OnCreatePlayerClicked" IsEnabled="{Binding CanCreate}" BackgroundColor="#1FA774" TextColor="White" />
+                            <Button Grid.Column="1" Text="Update" Clicked="OnUpdatePlayerClicked" IsEnabled="{Binding CanUpdatePlayer}" BackgroundColor="#F5B83D" TextColor="#2B2B2B" />
+                            <Button Grid.Column="2" Text="Delete" Clicked="OnDeletePlayerClicked" IsEnabled="{Binding CanUpdatePlayer}" BackgroundColor="#E4555F" TextColor="White" />
+                            <Button Grid.Column="3" Text="Clear" Clicked="OnClearPlayerClicked" BackgroundColor="#6A7685" TextColor="White" />
+                        </Grid>
 
-                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="7">
-                        <Button Grid.Column="0" Text="Create" Clicked="OnCreateScheduleClicked" IsEnabled="{Binding CanCreate}" BackgroundColor="#1FA774" TextColor="White" />
-                        <Button Grid.Column="1" Text="Update" Clicked="OnUpdateScheduleClicked" IsEnabled="{Binding CanUpdateSchedule}" BackgroundColor="#F5B83D" TextColor="#2B2B2B" />
-                        <Button Grid.Column="2" Text="Delete" Clicked="OnDeleteScheduleClicked" IsEnabled="{Binding CanUpdateSchedule}" BackgroundColor="#E4555F" TextColor="White" />
-                        <Button Grid.Column="3" Text="Clear" Clicked="OnClearScheduleClicked" BackgroundColor="#6A7685" TextColor="White" />
-                    </Grid>
+                        <CollectionView x:Name="PlayersCollection"
+                                        HeightRequest="195"
+                                        ItemsSource="{Binding Players}"
+                                        SelectionMode="Single"
+                                        SelectionChanged="OnPlayerSelectionChanged">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Stroke="#DDE6F3" StrokeThickness="1" BackgroundColor="White" Padding="10" Margin="0,0,0,6" StrokeShape="RoundRectangle 10">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="3">
+                                            <Label Grid.Row="0" Grid.Column="0" Text="{Binding FullName}" FontAttributes="Bold" TextColor="#12335A" />
+                                            <Label Grid.Row="0" Grid.Column="1" Text="{Binding PlayerId, StringFormat='Id {0}'}" TextColor="#7D91AB" FontSize="12" />
+                                            <Label Grid.Row="1" Grid.Column="0" Text="{Binding TeamDisplay}" TextColor="#485D78" />
+                                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding Position}" TextColor="#485D78" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Border>
 
-                    <CollectionView x:Name="SchedulesCollection"
-                                    HeightRequest="170"
-                                    ItemsSource="{Binding Schedules}"
-                                    SelectionMode="Single"
-                                    SelectionChanged="OnScheduleSelectionChanged">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Border Stroke="#DDE6F3" StrokeThickness="1" BackgroundColor="White" Padding="10" Margin="0,0,0,6" StrokeShape="RoundRectangle 10">
-                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="3">
-                                        <Label Grid.Row="0" Grid.Column="0" Text="{Binding TeamId, StringFormat='Team {0}'}" FontAttributes="Bold" TextColor="#12335A" />
-                                        <Label Grid.Row="0" Grid.Column="1" Text="{Binding ScheduleId, StringFormat='Id {0}'}" TextColor="#7D91AB" FontSize="12" />
-                                        <Label Grid.Row="1" Grid.Column="0" Text="{Binding GameId, StringFormat='Game {0}'}" TextColor="#485D78" />
-                                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding Side}" TextColor="#485D78" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </VerticalStackLayout>
-            </Border>
+                <Border FlexLayout.Basis="530"
+                        FlexLayout.Grow="1"
+                        FlexLayout.Shrink="1"
+                        StrokeThickness="0"
+                        BackgroundColor="#F9FBFF"
+                        Padding="14"
+                        Margin="0,0,10,12"
+                        StrokeShape="RoundRectangle 14">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Label Grid.Column="0" Text="Games" Style="{StaticResource CardTitleStyle}" />
+                            <Button Grid.Column="1" Text="Refresh" Clicked="OnRefreshGamesClicked" IsEnabled="{Binding CanRefreshAll}" Style="{StaticResource MiniRefreshStyle}" />
+                        </Grid>
 
-            <ActivityIndicator IsRunning="{Binding IsWorking}" IsVisible="{Binding IsWorking}" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Entry Grid.Column="0" Placeholder="Home Team Id" Keyboard="Numeric" Text="{Binding GameHomeTeamIdInput}" />
+                            <Entry Grid.Column="1" Placeholder="Away Team Id" Keyboard="Numeric" Text="{Binding GameAwayTeamIdInput}" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Entry Grid.Column="0" Placeholder="Game Date (yyyy-MM-dd HH:mm)" Text="{Binding GameDateInput}" />
+                            <Entry Grid.Column="1" Placeholder="Location" Text="{Binding GameLocationInput}" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                            <Entry Grid.Column="0" Placeholder="Home Score" Keyboard="Numeric" Text="{Binding GameHomeScoreInput}" />
+                            <Entry Grid.Column="1" Placeholder="Away Score" Keyboard="Numeric" Text="{Binding GameAwayScoreInput}" />
+                            <Entry Grid.Column="2" Placeholder="Status" Text="{Binding GameStatusInput}" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="7">
+                            <Button Grid.Column="0" Text="Create" Clicked="OnCreateGameClicked" IsEnabled="{Binding CanCreate}" BackgroundColor="#1FA774" TextColor="White" />
+                            <Button Grid.Column="1" Text="Update" Clicked="OnUpdateGameClicked" IsEnabled="{Binding CanUpdateGame}" BackgroundColor="#F5B83D" TextColor="#2B2B2B" />
+                            <Button Grid.Column="2" Text="Delete" Clicked="OnDeleteGameClicked" IsEnabled="{Binding CanUpdateGame}" BackgroundColor="#E4555F" TextColor="White" />
+                            <Button Grid.Column="3" Text="Clear" Clicked="OnClearGameClicked" BackgroundColor="#6A7685" TextColor="White" />
+                        </Grid>
+
+                        <CollectionView x:Name="GamesCollection"
+                                        HeightRequest="195"
+                                        ItemsSource="{Binding Games}"
+                                        SelectionMode="Single"
+                                        SelectionChanged="OnGameSelectionChanged">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Stroke="#DDE6F3" StrokeThickness="1" BackgroundColor="White" Padding="10" Margin="0,0,0,6" StrokeShape="RoundRectangle 10">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="3">
+                                            <Label Grid.Row="0" Grid.Column="0" Text="{Binding Matchup}" FontAttributes="Bold" TextColor="#12335A" />
+                                            <Label Grid.Row="0" Grid.Column="1" Text="{Binding GameId, StringFormat='Id {0}'}" TextColor="#7D91AB" FontSize="12" />
+                                            <Label Grid.Row="1" Grid.Column="0" Text="{Binding Score}" TextColor="#485D78" />
+                                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding Status}" TextColor="#485D78" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border FlexLayout.Basis="530"
+                        FlexLayout.Grow="1"
+                        FlexLayout.Shrink="1"
+                        StrokeThickness="0"
+                        BackgroundColor="#F9FBFF"
+                        Padding="14"
+                        Margin="0,0,0,12"
+                        StrokeShape="RoundRectangle 14">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Label Grid.Column="0" Text="Schedules" Style="{StaticResource CardTitleStyle}" />
+                            <Button Grid.Column="1" Text="Refresh" Clicked="OnRefreshSchedulesClicked" IsEnabled="{Binding CanRefreshAll}" Style="{StaticResource MiniRefreshStyle}" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                            <Entry Grid.Column="0" Placeholder="Team Id (select a team above)" Keyboard="Numeric" Text="{Binding ScheduleTeamIdInput}" />
+                            <Entry Grid.Column="1" Placeholder="Game Id" Keyboard="Numeric" Text="{Binding ScheduleGameIdInput}" />
+                            <Entry Grid.Column="2" Placeholder="Is Home (true/false)" Text="{Binding ScheduleIsHomeInput}" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="7">
+                            <Button Grid.Column="0" Text="Create" Clicked="OnCreateScheduleClicked" IsEnabled="{Binding CanCreate}" BackgroundColor="#1FA774" TextColor="White" />
+                            <Button Grid.Column="1" Text="Update" Clicked="OnUpdateScheduleClicked" IsEnabled="{Binding CanUpdateSchedule}" BackgroundColor="#F5B83D" TextColor="#2B2B2B" />
+                            <Button Grid.Column="2" Text="Delete" Clicked="OnDeleteScheduleClicked" IsEnabled="{Binding CanUpdateSchedule}" BackgroundColor="#E4555F" TextColor="White" />
+                            <Button Grid.Column="3" Text="Clear" Clicked="OnClearScheduleClicked" BackgroundColor="#6A7685" TextColor="White" />
+                        </Grid>
+
+                        <CollectionView x:Name="SchedulesCollection"
+                                        HeightRequest="175"
+                                        ItemsSource="{Binding Schedules}"
+                                        SelectionMode="Single"
+                                        SelectionChanged="OnScheduleSelectionChanged">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Stroke="#DDE6F3" StrokeThickness="1" BackgroundColor="White" Padding="10" Margin="0,0,0,6" StrokeShape="RoundRectangle 10">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="3">
+                                            <Label Grid.Row="0" Grid.Column="0" Text="{Binding TeamId, StringFormat='Team {0}'}" FontAttributes="Bold" TextColor="#12335A" />
+                                            <Label Grid.Row="0" Grid.Column="1" Text="{Binding ScheduleId, StringFormat='Id {0}'}" TextColor="#7D91AB" FontSize="12" />
+                                            <Label Grid.Row="1" Grid.Column="0" Text="{Binding GameId, StringFormat='Game {0}'}" TextColor="#485D78" />
+                                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding Side}" TextColor="#485D78" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+                </Border>
+            </FlexLayout>
+
+            <ActivityIndicator IsRunning="{Binding IsWorking}" IsVisible="{Binding IsWorking}" Color="#D9E9FF" />
         </VerticalStackLayout>
     </ScrollView>
 
