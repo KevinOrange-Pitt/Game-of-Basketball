@@ -8,6 +8,7 @@ public partial class PlayersPage : ContentPage
 {
     private readonly DatabaseService _databaseService;
     private readonly List<PlayerItem> _allPlayers = new();
+    private readonly List<StatItem> _allStats = new();
     private PlayerItem? _selectedPlayer;
 
     public ObservableCollection<PlayerItem> FilteredPlayers { get; } = new();
@@ -52,14 +53,25 @@ public partial class PlayersPage : ContentPage
     {
         try
         {
-            var players = await _databaseService.GetPlayersAsync();
+            var playersTask = _databaseService.GetPlayersAsync();
+            var statsTask = _databaseService.GetStatsAsync();
+
+            await Task.WhenAll(playersTask, statsTask);
+
+            var players = playersTask.Result;
+            var stats = statsTask.Result;
+
             _allPlayers.Clear();
             _allPlayers.AddRange(players);
+
+            _allStats.Clear();
+            _allStats.AddRange(stats);
+
             ApplyFilter();
         }
         catch
         {
-            await DisplayAlertAsync("API Error", "Could not load players. Start API and try again.", "OK");
+            await DisplayAlertAsync("API Error", "Could not load players/stats. Start API and try again.", "OK");
         }
     }
 
@@ -173,6 +185,7 @@ public partial class PlayersPage : ContentPage
     {
         if (e.CurrentSelection.FirstOrDefault() is not PlayerItem player)
         {
+            _selectedPlayer = null;
             return;
         }
 
@@ -195,11 +208,7 @@ public partial class PlayersPage : ContentPage
         SelectedPlayerTeam = $"Team: {player.TeamDisplay}";
         SelectedPlayerPosition = $"Position: {player.Position}";
 
-        // Placeholder stat values until detailed per-player Stats data is implemented.
-        StatPPG = $"PPG: {(player.JerseyNumber.HasValue ? player.JerseyNumber.Value / 2.0 + 8 : 10):F1}";
-        StatAssists = "Assists: 4.2";
-        StatRebounds = "Rebounds: 3.7";
-        StatSteals = "Steals: 1.4";
+        UpdateSelectedPlayerStats(player.PlayerId);
 
         OnPropertyChanged(nameof(SelectedPlayerName));
         OnPropertyChanged(nameof(SelectedPlayerTeam));
@@ -208,6 +217,32 @@ public partial class PlayersPage : ContentPage
         OnPropertyChanged(nameof(StatAssists));
         OnPropertyChanged(nameof(StatRebounds));
         OnPropertyChanged(nameof(StatSteals));
+    }
+
+    private void UpdateSelectedPlayerStats(int playerId)
+    {
+        var playerStats = _allStats.Where(s => s.PlayerId == playerId).ToList();
+
+        if (playerStats.Count == 0)
+        {
+            StatPPG = "PPG: 0.0";
+            StatAssists = "Assists: 0.0";
+            StatRebounds = "Rebounds: 0.0";
+            StatSteals = "Steals: 0.0";
+            return;
+        }
+
+        var gamesPlayed = Math.Max(1, playerStats.Select(s => s.GameId).Distinct().Count());
+
+        var averagePoints = playerStats.Sum(s => s.TotalPoints) / (double)gamesPlayed;
+        var averageAssists = playerStats.Sum(s => s.Assists) / (double)gamesPlayed;
+        var averageRebounds = playerStats.Sum(s => s.OffensiveRebounds + s.DefensiveRebounds) / (double)gamesPlayed;
+        var averageSteals = playerStats.Sum(s => s.Steals) / (double)gamesPlayed;
+
+        StatPPG = $"PPG: {averagePoints:F1}";
+        StatAssists = $"Assists: {averageAssists:F1}";
+        StatRebounds = $"Rebounds: {averageRebounds:F1}";
+        StatSteals = $"Steals: {averageSteals:F1}";
     }
 
     private bool TryGetPlayerInput(out int teamId, out string firstName, out string lastName, out int? jersey, out string position)

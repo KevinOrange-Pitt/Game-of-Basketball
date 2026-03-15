@@ -72,7 +72,7 @@ public partial class LiveGamePage : ContentPage
     public bool PlayerSelected => _selectedPlayer is not null;
     public bool SelectedGameInSession => _selectedGame is not null && IsGameInSession(_selectedGame.Status);
     public bool CanUndo => _undoStack.Count > 0;
-    public bool CanSave => _selectedPlayer is not null && SelectedGameInSession && !IsWorking;
+    public bool CanSave => _selectedPlayer is not null && _selectedGame is not null && !IsWorking;
 
     private bool _hasGameInSession;
     public bool HasGameInSession
@@ -216,6 +216,7 @@ public partial class LiveGamePage : ContentPage
         try
         {
             IsWorking = true;
+            var selectedGameId = SelectedGame?.GameId;
             var teams = await _db.GetTeamsAsync();
             var games = await _db.GetGamesAsync();
 
@@ -250,7 +251,11 @@ public partial class LiveGamePage : ContentPage
                 ? "No game is currently in session. Select a game to review scores only."
                 : "Live game detected. Scores auto-refresh every 5 seconds.";
 
-            if (SelectedGame is null && inSessionGame is not null)
+            if (selectedGameId.HasValue)
+            {
+                SelectedGameOption = GameOptions.FirstOrDefault(o => o.Game?.GameId == selectedGameId.Value);
+            }
+            else if (inSessionGame is not null)
             {
                 SelectedGameOption = GameOptions.FirstOrDefault(o => o.Game?.GameId == inSessionGame.GameId);
             }
@@ -317,14 +322,7 @@ public partial class LiveGamePage : ContentPage
             await RefreshScoresAsync();
 
             SelectedPlayer = null;
-            if (SelectedGameInSession)
-            {
-                StatusMessage = $"Game loaded: {gamePlayers.Count} players available.";
-            }
-            else
-            {
-                StatusMessage = "Selected game is not currently in session. Logging is disabled.";
-            }
+            StatusMessage = $"Game loaded: {gamePlayers.Count} players available.";
         }
         catch (Exception ex)
         {
@@ -404,12 +402,6 @@ public partial class LiveGamePage : ContentPage
             return;
         }
 
-        if (!SelectedGameInSession)
-        {
-            StatusMessage = "Logging is disabled because this game is not in session.";
-            return;
-        }
-
         apply();
         _undoStack.Push(undo);
         StatusMessage = $"Logged {label}.";
@@ -449,12 +441,6 @@ public partial class LiveGamePage : ContentPage
     {
         if (_selectedPlayer is null || _selectedGame is null)
         {
-            return;
-        }
-
-        if (!SelectedGameInSession)
-        {
-            StatusMessage = "Cannot save: selected game is not in session.";
             return;
         }
 
@@ -504,7 +490,7 @@ public partial class LiveGamePage : ContentPage
             var statusToPersist = _selectedGame.Status?.Trim();
             if (string.IsNullOrWhiteSpace(statusToPersist))
             {
-                throw new InvalidOperationException("Selected game has no status. Set a valid status on the game before saving live scores.");
+                statusToPersist = "In Progress";
             }
 
             _selectedGame.HomeScore = HomeScore;
@@ -585,8 +571,7 @@ public partial class LiveGamePage : ContentPage
         if (SelectedGameInSession)
         {
             await RefreshScoresAsync();
+            await LoadGamesAsync();
         }
-
-        await LoadGamesAsync();
     }
 }
