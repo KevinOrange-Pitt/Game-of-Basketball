@@ -36,8 +36,11 @@ public partial class StatsPage : ContentPage
         set
         {
             _selectedGame = value;
+            GameSelectionState.SetSelectedGame(value?.GameId);
             OnPropertyChanged();
             OnPropertyChanged(nameof(GameSelected));
+            OnPropertyChanged(nameof(SelectedGameDisplay));
+            OnPropertyChanged(nameof(ShowNoGameInSessionMessage));
         }
     }
 
@@ -50,10 +53,12 @@ public partial class StatsPage : ContentPage
             _selectedGameOption = value;
             SelectedGame = value?.Game;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedGameDisplay));
         }
     }
 
     public bool GameSelected => _selectedGame is not null;
+    public string SelectedGameDisplay => _selectedGameOption?.DisplayText ?? "No game selected";
     public bool HasStats => HomePlayerStats.Count > 0 || AwayPlayerStats.Count > 0;
     public bool CanRefresh => !IsWorking;
 
@@ -66,10 +71,12 @@ public partial class StatsPage : ContentPage
             _hasGameInSession = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(NoGameInSession));
+            OnPropertyChanged(nameof(ShowNoGameInSessionMessage));
         }
     }
 
     public bool NoGameInSession => !HasGameInSession;
+    public bool ShowNoGameInSessionMessage => NoGameInSession && !GameSelected;
 
     private string _liveStateMessage = "Checking live game status...";
     public string LiveStateMessage
@@ -223,6 +230,7 @@ public partial class StatsPage : ContentPage
         try
         {
             IsWorking = true;
+            var selectedGameId = SelectedGame?.GameId ?? GameSelectionState.SelectedGameId;
             var teams = await _db.GetTeamsAsync();
             var games = await _db.GetGamesAsync();
 
@@ -257,7 +265,11 @@ public partial class StatsPage : ContentPage
                 ? "No game is currently in session. You can still review saved game stats."
                 : "Live game detected. Stats auto-refresh every 5 seconds.";
 
-            if (SelectedGame is null && inSessionGame is not null)
+            if (selectedGameId.HasValue)
+            {
+                SelectedGameOption = GameOptions.FirstOrDefault(o => o.Game?.GameId == selectedGameId.Value);
+            }
+            else if (SelectedGame is null && inSessionGame is not null)
             {
                 SelectedGameOption = GameOptions.FirstOrDefault(o => o.Game?.GameId == inSessionGame.GameId);
             }
@@ -295,6 +307,12 @@ public partial class StatsPage : ContentPage
 
     private async void OnGamePickerChanged(object sender, EventArgs e)
     {
+        if (sender is Picker picker && picker.SelectedItem is GamePickerItem selected)
+        {
+            // Ensure selection is synchronized even if event fires before binding updates.
+            SelectedGameOption = selected;
+        }
+
         if (_selectedGame is null)
         {
             return;

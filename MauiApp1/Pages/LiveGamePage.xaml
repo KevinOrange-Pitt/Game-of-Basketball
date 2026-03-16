@@ -32,14 +32,21 @@
                     <Picker Title="-- Pick a game --"
                             ItemsSource="{Binding GameOptions}"
                             ItemDisplayBinding="{Binding DisplayText}"
+                            TextColor="#172A45"
+                            TitleColor="#6B7D94"
                             SelectedItem="{Binding SelectedGameOption}"
                             SelectedIndexChanged="OnGamePickerChanged" />
 
-                                <Label Text="No game is currently in session. You can still select a game."
+                          <Label Text="{Binding SelectedGameDisplay}"
+                              FontSize="13"
+                              FontAttributes="Bold"
+                              TextColor="#172A45" />
+
+                          <Label Text="No game is currently in session. You can still select a game."
                            FontSize="13"
                            FontAttributes="Bold"
                            TextColor="#8A2734"
-                           IsVisible="{Binding NoGameInSession}" />
+                              IsVisible="{Binding ShowNoGameInSessionMessage}" />
 
                     <Border StrokeThickness="0"
                             BackgroundColor="#13203A"

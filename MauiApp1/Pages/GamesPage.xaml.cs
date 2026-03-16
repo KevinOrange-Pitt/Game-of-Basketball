@@ -36,6 +36,8 @@ public partial class GamesPage : ContentPage
             }
 
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedHomeTeamNameDisplay));
+            OnPropertyChanged(nameof(SelectedHomeTeamIdDisplay));
         }
     }
 
@@ -53,8 +55,15 @@ public partial class GamesPage : ContentPage
             }
 
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedAwayTeamNameDisplay));
+            OnPropertyChanged(nameof(SelectedAwayTeamIdDisplay));
         }
     }
+
+    public string SelectedHomeTeamNameDisplay => _selectedHomeTeam?.Name ?? "No home team selected";
+    public string SelectedHomeTeamIdDisplay => _selectedHomeTeam is null ? "Id: --" : $"Id: {_selectedHomeTeam.TeamId}";
+    public string SelectedAwayTeamNameDisplay => _selectedAwayTeam?.Name ?? "No away team selected";
+    public string SelectedAwayTeamIdDisplay => _selectedAwayTeam is null ? "Id: --" : $"Id: {_selectedAwayTeam.TeamId}";
 
     public GamesPage()
     {
@@ -348,6 +357,10 @@ public partial class GamesPage : ContentPage
         OnPropertyChanged(nameof(GameAwayScoreInput));
         OnPropertyChanged(nameof(GameStatusInput));
         OnPropertyChanged(nameof(SelectedGameLabel));
+        OnPropertyChanged(nameof(SelectedHomeTeamNameDisplay));
+        OnPropertyChanged(nameof(SelectedHomeTeamIdDisplay));
+        OnPropertyChanged(nameof(SelectedAwayTeamNameDisplay));
+        OnPropertyChanged(nameof(SelectedAwayTeamIdDisplay));
     }
 
     private void SyncSelectedTeamsFromInputs()
@@ -372,6 +385,10 @@ public partial class GamesPage : ContentPage
 
         OnPropertyChanged(nameof(SelectedHomeTeam));
         OnPropertyChanged(nameof(SelectedAwayTeam));
+        OnPropertyChanged(nameof(SelectedHomeTeamNameDisplay));
+        OnPropertyChanged(nameof(SelectedHomeTeamIdDisplay));
+        OnPropertyChanged(nameof(SelectedAwayTeamNameDisplay));
+        OnPropertyChanged(nameof(SelectedAwayTeamIdDisplay));
     }
 }
 

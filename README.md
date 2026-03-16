@@ -53,3 +53,7 @@ This starts the API and launches MAUI using `net10.0-windows10.0.19041.0`.
 - API failed health check: ensure port `5117` is free, then run again.
 - MAUI launch failed on macOS: try `./run-dev.sh net10.0-maccatalyst`.
 - Missing commands: install/update `.NET SDK` and MAUI workload.
+
+## Running unit tests
+
+- Run this command - dotnet test --verbosity normal

@@ -39,7 +39,7 @@ public class DatabaseService
     public async Task DeleteTeamAsync(int id) => await DeleteAsync($"api/teams/{id}");
 
     // ── Players ───────────────────────────────────────────────────────────────
-    public async Task<List<PlayerItem>> GetPlayersAsync() => await GetListAsync<PlayerItem>("api/players");
+
 
     public async Task<PlayerItem> CreatePlayerAsync(int teamId, string firstName, string lastName, int? jerseyNumber, string position)
         => await PostAsync<PlayerItem>("api/players", new PlayerWriteRequest(teamId, firstName, lastName, jerseyNumber, position));
@@ -50,8 +50,7 @@ public class DatabaseService
     public async Task DeletePlayerAsync(int id) => await DeleteAsync($"api/players/{id}");
 
     // ── Games ─────────────────────────────────────────────────────────────────
-    public async Task<List<GameItem>> GetGamesAsync() => await GetListAsync<GameItem>("api/games");
-
+    
     public async Task<GameItem> CreateGameAsync(int homeTeamId, int awayTeamId, DateTime gameDate, string location, int? homeScore, int? awayScore, string status)
         => await PostAsync<GameItem>("api/games", new GameWriteRequest(homeTeamId, awayTeamId, gameDate, location, homeScore, awayScore, status));
 
@@ -61,7 +60,6 @@ public class DatabaseService
     public async Task DeleteGameAsync(int id) => await DeleteAsync($"api/games/{id}");
 
     // ── Schedules ─────────────────────────────────────────────────────────────
-    public async Task<List<ScheduleItem>> GetSchedulesAsync() => await GetListAsync<ScheduleItem>("api/schedules");
 
     public async Task<ScheduleItem> CreateScheduleAsync(int teamId, int gameId, bool isHome)
         => await PostAsync<ScheduleItem>("api/schedules", new ScheduleWriteRequest(teamId, gameId, isHome));

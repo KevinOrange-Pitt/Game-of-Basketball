@@ -8,6 +8,7 @@ public partial class GameViewPage : ContentPage
 {
     private readonly DatabaseService _db;
     private bool _isWorking;
+    private int? _selectedGameId;
 
     public ObservableCollection<GameItem> Games { get; } = new();
     public ObservableCollection<PlayerStatRow> HomePlayerStats { get; } = new();
@@ -17,7 +18,14 @@ public partial class GameViewPage : ContentPage
     public GameItem? SelectedGame
     {
         get => _selectedGame;
-        set { _selectedGame = value; OnPropertyChanged(); OnPropertyChanged(nameof(GameSelected)); }
+        set
+        {
+            _selectedGame = value;
+            _selectedGameId = value?.GameId;
+            GameSelectionState.SetSelectedGame(value?.GameId);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(GameSelected));
+        }
     }
 
     public bool GameSelected => _selectedGame is not null;
@@ -65,6 +73,11 @@ public partial class GameViewPage : ContentPage
     {
         base.OnAppearing();
         await LoadGamesAsync();
+
+        if (SelectedGame is not null)
+        {
+            await LoadGameDataAsync();
+        }
     }
 
     private async Task LoadGamesAsync()
@@ -73,8 +86,18 @@ public partial class GameViewPage : ContentPage
         {
             IsWorking = true;
             var games = await _db.GetGamesAsync();
+
+            // Keep the currently selected game whenever we refresh game list data.
+            var selectedGameId = _selectedGameId ?? GameSelectionState.SelectedGameId;
+
             Games.Clear();
             foreach (var g in games) Games.Add(g);
+
+            if (selectedGameId.HasValue)
+            {
+                SelectedGame = Games.FirstOrDefault(g => g.GameId == selectedGameId.Value);
+            }
+
             StatusMessage = $"Loaded {games.Count} games.";
         }
         catch (Exception ex)
@@ -93,12 +116,11 @@ public partial class GameViewPage : ContentPage
 
     private async void OnRefreshClicked(object sender, EventArgs e)
     {
-        if (_selectedGame is null)
+        await LoadGamesAsync();
+        if (_selectedGame is not null)
         {
-            await LoadGamesAsync();
-            return;
+            await LoadGameDataAsync();
         }
-        await LoadGameDataAsync();
     }
 
     private async Task LoadGameDataAsync()
@@ -108,6 +130,16 @@ public partial class GameViewPage : ContentPage
         try
         {
             IsWorking = true;
+
+            // Pull latest game snapshot so status, date, and persisted scores do not stay stale.
+            var games = await _db.GetGamesAsync();
+            var latestGame = games.FirstOrDefault(g => g.GameId == _selectedGame.GameId);
+            if (latestGame is not null)
+            {
+                _selectedGame = latestGame;
+                _selectedGameId = latestGame.GameId;
+                OnPropertyChanged(nameof(SelectedGame));
+            }
 
             var teams = await _db.GetTeamsAsync();
             var allPlayers = await _db.GetPlayersAsync();
@@ -141,11 +173,9 @@ public partial class GameViewPage : ContentPage
                 AwayPlayerStats.Add(PlayerStatRow.From(p, s));
             }
 
-            // Score from game record if available, otherwise sum from stats
-            HomeScore = _selectedGame.HomeScore
-                ?? HomePlayerStats.Sum(r => r.Points);
-            AwayScore = _selectedGame.AwayScore
-                ?? AwayPlayerStats.Sum(r => r.Points);
+            // Always derive the board score from latest stat rows for immediate in-app sync.
+            HomeScore = HomePlayerStats.Sum(r => r.Points);
+            AwayScore = AwayPlayerStats.Sum(r => r.Points);
 
             OnPropertyChanged(nameof(HasStats));
             StatusMessage = $"Showing {stats.Count} stat records for this game.";

@@ -35,10 +35,13 @@ public partial class LiveGamePage : ContentPage
         set
         {
             _selectedGame = value;
+            GameSelectionState.SetSelectedGame(value?.GameId);
             OnPropertyChanged();
             OnPropertyChanged(nameof(GameSelected));
             OnPropertyChanged(nameof(SelectedGameInSession));
             OnPropertyChanged(nameof(CanSave));
+            OnPropertyChanged(nameof(SelectedGameDisplay));
+            OnPropertyChanged(nameof(ShowNoGameInSessionMessage));
         }
     }
 
@@ -51,6 +54,7 @@ public partial class LiveGamePage : ContentPage
             _selectedGameOption = value;
             SelectedGame = value?.Game;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedGameDisplay));
         }
     }
 
@@ -69,6 +73,7 @@ public partial class LiveGamePage : ContentPage
     }
 
     public bool GameSelected => _selectedGame is not null;
+    public string SelectedGameDisplay => _selectedGameOption?.DisplayText ?? "No game selected";
     public bool PlayerSelected => _selectedPlayer is not null;
     public bool SelectedGameInSession => _selectedGame is not null && IsGameInSession(_selectedGame.Status);
     public bool CanUndo => _undoStack.Count > 0;
@@ -83,10 +88,12 @@ public partial class LiveGamePage : ContentPage
             _hasGameInSession = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(NoGameInSession));
+            OnPropertyChanged(nameof(ShowNoGameInSessionMessage));
         }
     }
 
     public bool NoGameInSession => !HasGameInSession;
+    public bool ShowNoGameInSessionMessage => NoGameInSession && !GameSelected;
 
     private string _liveStateMessage = "Checking live game status...";
     public string LiveStateMessage
@@ -216,7 +223,7 @@ public partial class LiveGamePage : ContentPage
         try
         {
             IsWorking = true;
-            var selectedGameId = SelectedGame?.GameId;
+            var selectedGameId = SelectedGame?.GameId ?? GameSelectionState.SelectedGameId;
             var teams = await _db.GetTeamsAsync();
             var games = await _db.GetGamesAsync();
 
@@ -293,6 +300,12 @@ public partial class LiveGamePage : ContentPage
 
     private async void OnGamePickerChanged(object sender, EventArgs e)
     {
+        if (sender is Picker picker && picker.SelectedItem is GamePickerItem selected)
+        {
+            // Ensure selection is synchronized even if event fires before binding updates.
+            SelectedGameOption = selected;
+        }
+
         if (_selectedGame is null)
         {
             return;
@@ -345,13 +358,30 @@ public partial class LiveGamePage : ContentPage
         var stats = await _db.GetStatsByGameAsync(_selectedGame.GameId);
         var players = GamePlayers.ToList();
 
-        HomeScore = stats
+        var persistedHome = stats
             .Where(s => players.Any(p => p.PlayerId == s.PlayerId && p.TeamId == _selectedGame.HomeTeamId))
             .Sum(s => s.TotalPoints);
 
-        AwayScore = stats
+        var persistedAway = stats
             .Where(s => players.Any(p => p.PlayerId == s.PlayerId && p.TeamId == _selectedGame.AwayTeamId))
             .Sum(s => s.TotalPoints);
+
+        // Keep in-memory point taps visible even before Save.
+        var pendingPoints = (_twoPtMade * 2) + (_threePtMade * 3);
+        if (_selectedPlayer is not null)
+        {
+            if (_selectedPlayer.TeamId == _selectedGame.HomeTeamId)
+            {
+                persistedHome += pendingPoints;
+            }
+            else if (_selectedPlayer.TeamId == _selectedGame.AwayTeamId)
+            {
+                persistedAway += pendingPoints;
+            }
+        }
+
+        HomeScore = persistedHome;
+        AwayScore = persistedAway;
     }
 
     private void On2ptMadeClicked(object sender, EventArgs e) =>
