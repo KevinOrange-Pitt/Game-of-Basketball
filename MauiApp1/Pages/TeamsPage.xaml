@@ -70,6 +70,38 @@
                         </CollectionView.ItemTemplate>
                     </CollectionView>
 
+                    <Label Text="Starting 5" FontSize="17" FontAttributes="Bold" TextColor="#334155" />
+                    <Label Text="{Binding StarterSummary}" FontSize="12" TextColor="#64748B" />
+                    <ScrollView HeightRequest="220">
+                        <VerticalStackLayout Spacing="0" BindableLayout.ItemsSource="{Binding StarterOptions}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Stroke="#CBD5E1" StrokeThickness="1" BackgroundColor="#F8FAFC" Padding="8" Margin="0,0,0,6" StrokeShape="RoundRectangle 8" MinimumHeightRequest="68">
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                            <Border Grid.Column="0" Stroke="#334155" StrokeThickness="1" BackgroundColor="#FFFFFF" Padding="2" StrokeShape="RoundRectangle 4" WidthRequest="30" HeightRequest="30">
+                                                <CheckBox IsChecked="{Binding IsStarter}"
+                                                          Color="#2563EB"
+                                                          Scale="1.1"
+                                                          HorizontalOptions="Center"
+                                                          VerticalOptions="Center"
+                                                          CheckedChanged="OnStarterCheckedChanged" />
+                                            </Border>
+                                            <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                                <Label Text="{Binding Display}" TextColor="#1E293B" VerticalTextAlignment="Center" />
+                                                <Label Text="Tap box to include in Starting 5" FontSize="11" TextColor="#64748B" />
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </ScrollView>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" Text="Save Starting 5" Clicked="OnSaveStartersClicked" BackgroundColor="#2563EB" TextColor="White" />
+                        <Button Grid.Column="1" Text="Clear" Clicked="OnClearStartersClicked" BackgroundColor="#64748B" TextColor="White" />
+                    </Grid>
+
                     <Label Text="Schedule" FontSize="17" FontAttributes="Bold" TextColor="#334155" />
                     <CollectionView ItemsSource="{Binding Schedule}" HeightRequest="180">
                         <CollectionView.ItemTemplate>

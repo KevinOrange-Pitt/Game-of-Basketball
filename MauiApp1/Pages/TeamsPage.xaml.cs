@@ -8,16 +8,19 @@ public partial class TeamsPage : ContentPage
 {
     private readonly DatabaseService _databaseService;
     private TeamItem? _selectedTeam;
+    private readonly HashSet<int> _selectedStarterIds = new();
 
     public ObservableCollection<TeamItem> Teams { get; } = new();
     public ObservableCollection<PlayerItem> Roster { get; } = new();
     public ObservableCollection<TeamScheduleRow> Schedule { get; } = new();
+    public ObservableCollection<StarterSelectionItem> StarterOptions { get; } = new();
 
     public string SelectedTeamHeader { get; set; } = "Select a team";
     public string SelectedTeamDetail { get; set; } = "Choose a team to view roster and schedule.";
     public string TeamNameInput { get; set; } = string.Empty;
     public string TeamCityInput { get; set; } = string.Empty;
     public string TeamCoachInput { get; set; } = string.Empty;
+    public string StarterSummary => $"Starting 5 selected: {_selectedStarterIds.Count}/5";
 
     public TeamsPage()
     {
@@ -133,6 +136,9 @@ public partial class TeamsPage : ContentPage
     {
         _selectedTeam = null;
         TeamSelectionState.SetSelectedTeam(null, "Select a team");
+        _selectedStarterIds.Clear();
+        StarterOptions.Clear();
+        OnPropertyChanged(nameof(StarterSummary));
         ClearTeamForm();
     }
 
@@ -172,6 +178,8 @@ public partial class TeamsPage : ContentPage
             {
                 Roster.Add(player);
             }
+
+            await LoadStartersAsync(team.TeamId);
 
             Schedule.Clear();
 
@@ -248,13 +256,125 @@ public partial class TeamsPage : ContentPage
         SelectedTeamHeader = "Select a team";
         SelectedTeamDetail = "Choose a team to view roster and schedule.";
         TeamSelectionState.SetSelectedTeam(null, "Select a team");
+        _selectedStarterIds.Clear();
+        StarterOptions.Clear();
 
         OnPropertyChanged(nameof(TeamNameInput));
         OnPropertyChanged(nameof(TeamCityInput));
         OnPropertyChanged(nameof(TeamCoachInput));
         OnPropertyChanged(nameof(SelectedTeamHeader));
         OnPropertyChanged(nameof(SelectedTeamDetail));
+        OnPropertyChanged(nameof(StarterSummary));
     }
+
+    private async Task LoadStartersAsync(int teamId)
+    {
+        var starterIds = await _databaseService.GetTeamStarterIdsAsync(teamId);
+        _selectedStarterIds.Clear();
+        foreach (var id in starterIds)
+        {
+            _selectedStarterIds.Add(id);
+        }
+
+        StarterOptions.Clear();
+        foreach (var player in Roster)
+        {
+            StarterOptions.Add(new StarterSelectionItem
+            {
+                PlayerId = player.PlayerId,
+                Display = player.Display,
+                IsStarter = _selectedStarterIds.Contains(player.PlayerId)
+            });
+        }
+
+        OnPropertyChanged(nameof(StarterSummary));
+    }
+
+    private void OnStarterCheckedChanged(object sender, CheckedChangedEventArgs e)
+    {
+        if (sender is not CheckBox checkBox || checkBox.BindingContext is not StarterSelectionItem item)
+        {
+            return;
+        }
+
+        if (e.Value)
+        {
+            if (_selectedStarterIds.Count >= 5)
+            {
+                checkBox.IsChecked = false;
+                _ = DisplayAlertAsync("Starting 5", "You can select up to 5 starters.", "OK");
+                return;
+            }
+
+            _selectedStarterIds.Add(item.PlayerId);
+            item.IsStarter = true;
+        }
+        else
+        {
+            _selectedStarterIds.Remove(item.PlayerId);
+            item.IsStarter = false;
+        }
+
+        OnPropertyChanged(nameof(StarterSummary));
+    }
+
+    private async void OnSaveStartersClicked(object sender, EventArgs e)
+    {
+        if (_selectedTeam is null)
+        {
+            await DisplayAlertAsync("Starting 5", "Select a team first.", "OK");
+            return;
+        }
+
+        if (_selectedStarterIds.Count != 5)
+        {
+            await DisplayAlertAsync("Starting 5", "Select exactly 5 players before saving.", "OK");
+            return;
+        }
+
+        try
+        {
+            await _databaseService.SetTeamStarterIdsAsync(_selectedTeam.TeamId, _selectedStarterIds.OrderBy(id => id));
+            await DisplayAlertAsync("Starting 5", "Starting lineup saved.", "OK");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Starting 5", ex.Message, "OK");
+        }
+    }
+
+    private async void OnClearStartersClicked(object sender, EventArgs e)
+    {
+        if (_selectedTeam is null)
+        {
+            await DisplayAlertAsync("Starting 5", "Select a team first.", "OK");
+            return;
+        }
+
+        try
+        {
+            await _databaseService.SetTeamStarterIdsAsync(_selectedTeam.TeamId, Array.Empty<int>());
+            _selectedStarterIds.Clear();
+            foreach (var option in StarterOptions)
+            {
+                option.IsStarter = false;
+            }
+
+            await LoadStartersAsync(_selectedTeam.TeamId);
+            await DisplayAlertAsync("Starting 5", "Starting lineup cleared.", "OK");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Starting 5", ex.Message, "OK");
+        }
+    }
+}
+
+public class StarterSelectionItem
+{
+    public int PlayerId { get; set; }
+    public string Display { get; set; } = string.Empty;
+    public bool IsStarter { get; set; }
 }
 
 public class TeamScheduleRow

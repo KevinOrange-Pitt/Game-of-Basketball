@@ -38,6 +38,15 @@ public class DatabaseService
 
     public async Task DeleteTeamAsync(int id) => await DeleteAsync($"api/teams/{id}");
 
+    public async Task<List<int>> GetTeamStarterIdsAsync(int teamId)
+        => await GetListAsync<int>($"api/teams/{teamId}/starters");
+
+    public async Task SetTeamStarterIdsAsync(int teamId, IEnumerable<int> playerIds)
+    {
+        var ids = playerIds?.Distinct().ToList() ?? new List<int>();
+        await PutAsync($"api/teams/{teamId}/starters", new TeamStartersWriteRequest(ids));
+    }
+
     // ── Players ───────────────────────────────────────────────────────────────
 
 
@@ -197,6 +206,7 @@ public class DatabaseService
 
     // ── Write request records ─────────────────────────────────────────────────
     private record TeamWriteRequest(string Name, string City, string Coach);
+    private record TeamStartersWriteRequest(List<int> PlayerIds);
     private record PlayerWriteRequest(int TeamId, string FirstName, string LastName, int? JerseyNumber, string Position);
     private record GameWriteRequest(int HomeTeamId, int AwayTeamId, DateTime GameDate, string Location, int? HomeScore, int? AwayScore, string Status);
     private record ScheduleWriteRequest(int TeamId, int GameId, bool IsHome);
