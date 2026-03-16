@@ -31,6 +31,8 @@ public class PlayerItem
         }
     }
 
+    public string PickerDisplay => $"[{TeamDisplay}] {Display}";
+
     public override string ToString() => Display;
 }
 

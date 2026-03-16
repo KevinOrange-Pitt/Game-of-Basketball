@@ -28,6 +28,7 @@ public partial class LiveGamePage : ContentPage
     public ObservableCollection<GamePickerItem> GameOptions { get; } = new();
     public ObservableCollection<PlayerItem> GamePlayers { get; } = new();
     public ObservableCollection<PlayerItem> BenchPlayers { get; } = new();
+    public ObservableCollection<PlayerItem> FilteredBenchPlayers { get; } = new();
 
     private GameItem? _selectedGame;
     public GameItem? SelectedGame
@@ -82,7 +83,19 @@ public partial class LiveGamePage : ContentPage
             _selectedOnCourtPlayer = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanSubstitute));
+            RefreshFilteredBenchPlayers();
         }
+    }
+
+    private void RefreshFilteredBenchPlayers()
+    {
+        FilteredBenchPlayers.Clear();
+        if (_selectedOnCourtPlayer is null) return;
+        foreach (var p in BenchPlayers.Where(b => b.TeamId == _selectedOnCourtPlayer.TeamId))
+            FilteredBenchPlayers.Add(p);
+        // Clear bench selection if it no longer belongs to the filtered list
+        if (_selectedBenchPlayer is not null && _selectedBenchPlayer.TeamId != _selectedOnCourtPlayer.TeamId)
+            SelectedBenchPlayer = null;
     }
 
     private PlayerItem? _selectedBenchPlayer;

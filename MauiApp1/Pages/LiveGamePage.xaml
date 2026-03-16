@@ -75,7 +75,7 @@
                     <Label Text="Select Player" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
                     <Picker Title="-- Pick a player --"
                             ItemsSource="{Binding GamePlayers}"
-                            ItemDisplayBinding="{Binding FullName}"
+                            ItemDisplayBinding="{Binding PickerDisplay}"
                             SelectedItem="{Binding SelectedPlayer}" />
                     <Label Text="{Binding SelectedPlayerDisplay}" TextColor="#1F3C66" FontSize="13" FontAttributes="Bold" />
                 </VerticalStackLayout>
@@ -88,14 +88,14 @@
                         <Picker Grid.Column="0"
                                 Title="On court"
                                 ItemsSource="{Binding GamePlayers}"
-                                ItemDisplayBinding="{Binding FullName}"
+                                ItemDisplayBinding="{Binding PickerDisplay}"
                             TextColor="#172A45"
                             TitleColor="#6B7D94"
                                 SelectedItem="{Binding SelectedOnCourtPlayer}" />
                         <Picker Grid.Column="1"
                                 Title="Bench"
-                                ItemsSource="{Binding BenchPlayers}"
-                                ItemDisplayBinding="{Binding FullName}"
+                                ItemsSource="{Binding FilteredBenchPlayers}"
+                                ItemDisplayBinding="{Binding PickerDisplay}"
                             TextColor="#172A45"
                             TitleColor="#6B7D94"
                                 SelectedItem="{Binding SelectedBenchPlayer}" />
