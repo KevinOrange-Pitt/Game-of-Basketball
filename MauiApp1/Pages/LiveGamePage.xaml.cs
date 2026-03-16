@@ -35,6 +35,7 @@ public partial class LiveGamePage : ContentPage
         set
         {
             _selectedGame = value;
+            GameSelectionState.SetSelectedGame(value?.GameId);
             OnPropertyChanged();
             OnPropertyChanged(nameof(GameSelected));
             OnPropertyChanged(nameof(SelectedGameInSession));
@@ -216,7 +217,7 @@ public partial class LiveGamePage : ContentPage
         try
         {
             IsWorking = true;
-            var selectedGameId = SelectedGame?.GameId;
+            var selectedGameId = SelectedGame?.GameId ?? GameSelectionState.SelectedGameId;
             var teams = await _db.GetTeamsAsync();
             var games = await _db.GetGamesAsync();
 

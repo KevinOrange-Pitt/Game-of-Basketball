@@ -36,6 +36,7 @@ public partial class StatsPage : ContentPage
         set
         {
             _selectedGame = value;
+            GameSelectionState.SetSelectedGame(value?.GameId);
             OnPropertyChanged();
             OnPropertyChanged(nameof(GameSelected));
         }
@@ -223,6 +224,7 @@ public partial class StatsPage : ContentPage
         try
         {
             IsWorking = true;
+            var selectedGameId = SelectedGame?.GameId ?? GameSelectionState.SelectedGameId;
             var teams = await _db.GetTeamsAsync();
             var games = await _db.GetGamesAsync();
 
@@ -257,7 +259,11 @@ public partial class StatsPage : ContentPage
                 ? "No game is currently in session. You can still review saved game stats."
                 : "Live game detected. Stats auto-refresh every 5 seconds.";
 
-            if (SelectedGame is null && inSessionGame is not null)
+            if (selectedGameId.HasValue)
+            {
+                SelectedGameOption = GameOptions.FirstOrDefault(o => o.Game?.GameId == selectedGameId.Value);
+            }
+            else if (SelectedGame is null && inSessionGame is not null)
             {
                 SelectedGameOption = GameOptions.FirstOrDefault(o => o.Game?.GameId == inSessionGame.GameId);
             }

@@ -22,6 +22,7 @@ public partial class GameViewPage : ContentPage
         {
             _selectedGame = value;
             _selectedGameId = value?.GameId;
+            GameSelectionState.SetSelectedGame(value?.GameId);
             OnPropertyChanged();
             OnPropertyChanged(nameof(GameSelected));
         }
@@ -87,7 +88,7 @@ public partial class GameViewPage : ContentPage
             var games = await _db.GetGamesAsync();
 
             // Keep the currently selected game whenever we refresh game list data.
-            var selectedGameId = _selectedGameId;
+            var selectedGameId = _selectedGameId ?? GameSelectionState.SelectedGameId;
 
             Games.Clear();
             foreach (var g in games) Games.Add(g);
