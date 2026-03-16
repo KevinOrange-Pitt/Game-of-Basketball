@@ -39,6 +39,21 @@
                 </Grid>
 
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <Border Grid.Column="0" Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="#F8FAFC" Padding="8" StrokeShape="RoundRectangle 8">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="{Binding SelectedHomeTeamNameDisplay}" TextColor="#0F172A" FontAttributes="Bold" FontSize="12" />
+                            <Label Text="{Binding SelectedHomeTeamIdDisplay}" TextColor="#64748B" FontSize="11" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="1" Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="#F8FAFC" Padding="8" StrokeShape="RoundRectangle 8">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="{Binding SelectedAwayTeamNameDisplay}" TextColor="#0F172A" FontAttributes="Bold" FontSize="12" />
+                            <Label Text="{Binding SelectedAwayTeamIdDisplay}" TextColor="#64748B" FontSize="11" />
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                     <Entry Grid.Column="0" Placeholder="Home Team Id" Keyboard="Numeric" Text="{Binding GameHomeTeamIdInput}" />
                     <Entry Grid.Column="1" Placeholder="Away Team Id" Keyboard="Numeric" Text="{Binding GameAwayTeamIdInput}" />
                 </Grid>

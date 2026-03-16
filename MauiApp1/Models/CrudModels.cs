@@ -78,4 +78,7 @@ public class GamePickerItem
 {
     public GameItem? Game { get; set; }
     public string DisplayText { get; set; } = string.Empty;
+
+    // Fallback text rendering for Picker selected value on platforms that prefer ToString().
+    public override string ToString() => DisplayText;
 }
