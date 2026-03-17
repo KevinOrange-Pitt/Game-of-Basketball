@@ -144,6 +144,62 @@ app.MapDelete("/api/teams/{id:int}", async (int id, IConfiguration config) =>
     return Results.NoContent();
 });
 
+app.MapGet("/api/teams/{id:int}/starters", async (int id, IConfiguration config) =>
+{
+    if (id <= 0)
+    {
+        return Results.BadRequest(new { message = "Team Id must be greater than zero." });
+    }
+
+    var result = await TryExecuteWithFallbackAsync(config, cs => LoadTeamStarterPlayerIdsAsync(cs, id));
+    return ToListResult(result, "Database query failed");
+});
+
+app.MapPut("/api/teams/{id:int}/starters", async (int id, TeamStartersWriteDto starters, IConfiguration config) =>
+{
+    if (id <= 0)
+    {
+        return Results.BadRequest(new { message = "Team Id must be greater than zero." });
+    }
+
+    var playerIds = starters.PlayerIds ?? new List<int>();
+
+    if (playerIds.Count > 5)
+    {
+        return Results.BadRequest(new { message = "A team can have at most 5 starters." });
+    }
+
+    var distinctIds = playerIds.Where(pid => pid > 0).Distinct().ToList();
+    if (distinctIds.Count != playerIds.Count)
+    {
+        return Results.BadRequest(new { message = "Starter player Ids must be unique and greater than zero." });
+    }
+
+    var result = await TryExecuteWithFallbackAsync(config, cs => SaveTeamStarterPlayerIdsAsync(cs, id, distinctIds));
+    if (result.Attempts.Count == 0)
+    {
+        return Results.Problem(
+            title: "Database configuration missing",
+            detail: "Configure at least one connection string: SqlDatabaseSqlAuth or SqlDatabase.",
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
+
+    if (result.SucceededConnection is null)
+    {
+        return Results.Problem(
+            title: "Database update failed",
+            detail: BuildAttemptsDetail(result.Attempts),
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    if (!result.Data)
+    {
+        return Results.BadRequest(new { message = "One or more players do not belong to the selected team." });
+    }
+
+    return Results.NoContent();
+});
+
 app.MapGet("/api/players", async (IConfiguration config) =>
 {
     var result = await TryExecuteWithFallbackAsync(config, LoadPlayersAsync);
@@ -1149,6 +1205,99 @@ static async Task<bool> DeleteScheduleAsync(string connectionString, int id)
     return await command.ExecuteNonQueryAsync() > 0;
 }
 
+static async Task EnsureTeamStartersTableAsync(SqlConnection connection)
+{
+    const string sql = @"
+IF OBJECT_ID('dbo.TeamStarters', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.TeamStarters
+    (
+        team_id INT NOT NULL,
+        player_id INT NOT NULL,
+        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT PK_TeamStarters PRIMARY KEY (team_id, player_id)
+    );
+END;";
+
+    await using var command = new SqlCommand(sql, connection);
+    await command.ExecuteNonQueryAsync();
+}
+
+static async Task<List<int>> LoadTeamStarterPlayerIdsAsync(string connectionString, int teamId)
+{
+    await using var connection = await OpenConnectionAsync(connectionString);
+    await EnsureTeamStartersTableAsync(connection);
+
+    const string sql = @"
+SELECT player_id
+FROM dbo.TeamStarters
+WHERE team_id = @team_id
+ORDER BY player_id;";
+
+    await using var command = new SqlCommand(sql, connection);
+    command.Parameters.AddWithValue("@team_id", teamId);
+    await using var reader = await command.ExecuteReaderAsync();
+
+    var playerIds = new List<int>();
+    while (await reader.ReadAsync())
+    {
+        playerIds.Add(reader.GetInt32(0));
+    }
+
+    return playerIds;
+}
+
+static async Task<bool> SaveTeamStarterPlayerIdsAsync(string connectionString, int teamId, List<int> playerIds)
+{
+    await using var connection = await OpenConnectionAsync(connectionString);
+    await EnsureTeamStartersTableAsync(connection);
+
+    if (playerIds.Count > 0)
+    {
+        var parameterNames = new List<string>();
+        await using var validateCommand = connection.CreateCommand();
+        validateCommand.CommandText = "SELECT COUNT(1) FROM dbo.Players WHERE team_id = @team_id AND player_id IN (";
+        validateCommand.Parameters.AddWithValue("@team_id", teamId);
+
+        for (var i = 0; i < playerIds.Count; i++)
+        {
+            var name = $"@player_{i}";
+            parameterNames.Add(name);
+            validateCommand.Parameters.AddWithValue(name, playerIds[i]);
+        }
+
+        validateCommand.CommandText += string.Join(",", parameterNames) + ");";
+        var validCount = Convert.ToInt32(await validateCommand.ExecuteScalarAsync());
+        if (validCount != playerIds.Count)
+        {
+            return false;
+        }
+    }
+
+    await using var transaction = await connection.BeginTransactionAsync();
+
+    await using (var deleteCommand = new SqlCommand("DELETE FROM dbo.TeamStarters WHERE team_id = @team_id;", connection, (SqlTransaction)transaction))
+    {
+        deleteCommand.Parameters.AddWithValue("@team_id", teamId);
+        await deleteCommand.ExecuteNonQueryAsync();
+    }
+
+    foreach (var playerId in playerIds)
+    {
+        await using var insertCommand = new SqlCommand(
+            "INSERT INTO dbo.TeamStarters (team_id, player_id) VALUES (@team_id, @player_id);",
+            connection,
+            (SqlTransaction)transaction);
+
+        insertCommand.Parameters.AddWithValue("@team_id", teamId);
+        insertCommand.Parameters.AddWithValue("@player_id", playerId);
+        await insertCommand.ExecuteNonQueryAsync();
+    }
+
+    await transaction.CommitAsync();
+    return true;
+}
+
 static async Task EnsureStatsTableAsync(SqlConnection connection)
 {
     const string sql = @"
@@ -1477,6 +1626,7 @@ public record SchemaCountsDto(int TeamsCount, int PlayersCount, int GamesCount, 
 
 public record TeamDto(int TeamId, string Name, string City, string Coach, DateTime CreatedAt);
 public record TeamWriteDto(string Name, string City, string Coach);
+public record TeamStartersWriteDto(List<int> PlayerIds);
 
 public record PlayerDto(int PlayerId, int TeamId, string FirstName, string LastName, int? JerseyNumber, string Position, DateTime CreatedAt, string TeamName);
 public record PlayerWriteDto(int TeamId, string FirstName, string LastName, int? JerseyNumber, string Position);

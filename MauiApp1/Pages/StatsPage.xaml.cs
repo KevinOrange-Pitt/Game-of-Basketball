@@ -39,6 +39,8 @@ public partial class StatsPage : ContentPage
             GameSelectionState.SetSelectedGame(value?.GameId);
             OnPropertyChanged();
             OnPropertyChanged(nameof(GameSelected));
+            OnPropertyChanged(nameof(SelectedGameDisplay));
+            OnPropertyChanged(nameof(ShowNoGameInSessionMessage));
         }
     }
 
@@ -51,10 +53,12 @@ public partial class StatsPage : ContentPage
             _selectedGameOption = value;
             SelectedGame = value?.Game;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedGameDisplay));
         }
     }
 
     public bool GameSelected => _selectedGame is not null;
+    public string SelectedGameDisplay => _selectedGameOption?.DisplayText ?? "No game selected";
     public bool HasStats => HomePlayerStats.Count > 0 || AwayPlayerStats.Count > 0;
     public bool CanRefresh => !IsWorking;
 
@@ -67,10 +71,12 @@ public partial class StatsPage : ContentPage
             _hasGameInSession = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(NoGameInSession));
+            OnPropertyChanged(nameof(ShowNoGameInSessionMessage));
         }
     }
 
     public bool NoGameInSession => !HasGameInSession;
+    public bool ShowNoGameInSessionMessage => NoGameInSession && !GameSelected;
 
     private string _liveStateMessage = "Checking live game status...";
     public string LiveStateMessage
@@ -301,6 +307,12 @@ public partial class StatsPage : ContentPage
 
     private async void OnGamePickerChanged(object sender, EventArgs e)
     {
+        if (sender is Picker picker && picker.SelectedItem is GamePickerItem selected)
+        {
+            // Ensure selection is synchronized even if event fires before binding updates.
+            SelectedGameOption = selected;
+        }
+
         if (_selectedGame is null)
         {
             return;
@@ -336,6 +348,23 @@ public partial class StatsPage : ContentPage
         {
             IsWorking = true;
 
+            var latestGames = await _db.GetGamesAsync();
+            var latestGame = latestGames.FirstOrDefault(g => g.GameId == _selectedGame.GameId);
+            if (latestGame is not null)
+            {
+                _selectedGame = latestGame;
+                var matchingOption = GameOptions.FirstOrDefault(o => o.Game?.GameId == latestGame.GameId);
+                if (matchingOption is not null)
+                {
+                    _selectedGameOption = matchingOption;
+                }
+
+                OnPropertyChanged(nameof(SelectedGame));
+                OnPropertyChanged(nameof(SelectedGameOption));
+                OnPropertyChanged(nameof(SelectedGameDisplay));
+                OnPropertyChanged(nameof(GameSelected));
+            }
+
             var teams = await _db.GetTeamsAsync();
             var allPlayers = await _db.GetPlayersAsync();
             var stats = await _db.GetStatsByGameAsync(_selectedGame.GameId);
@@ -369,8 +398,8 @@ public partial class StatsPage : ContentPage
 
             ApplySearchFilter();
 
-            HomeScore = _selectedGame.HomeScore ?? HomePlayerStats.Sum(r => r.Points);
-            AwayScore = _selectedGame.AwayScore ?? AwayPlayerStats.Sum(r => r.Points);
+            HomeScore = _selectedGame.HomeScore ?? _allHomeRows.Sum(r => r.Points);
+            AwayScore = _selectedGame.AwayScore ?? _allAwayRows.Sum(r => r.Points);
 
             OnPropertyChanged(nameof(HasStats));
 

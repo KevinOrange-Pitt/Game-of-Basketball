@@ -27,6 +27,8 @@ public partial class LiveGamePage : ContentPage
     public ObservableCollection<GameItem> Games { get; } = new();
     public ObservableCollection<GamePickerItem> GameOptions { get; } = new();
     public ObservableCollection<PlayerItem> GamePlayers { get; } = new();
+    public ObservableCollection<PlayerItem> BenchPlayers { get; } = new();
+    public ObservableCollection<PlayerItem> FilteredBenchPlayers { get; } = new();
 
     private GameItem? _selectedGame;
     public GameItem? SelectedGame
@@ -40,6 +42,8 @@ public partial class LiveGamePage : ContentPage
             OnPropertyChanged(nameof(GameSelected));
             OnPropertyChanged(nameof(SelectedGameInSession));
             OnPropertyChanged(nameof(CanSave));
+            OnPropertyChanged(nameof(SelectedGameDisplay));
+            OnPropertyChanged(nameof(ShowNoGameInSessionMessage));
         }
     }
 
@@ -52,6 +56,7 @@ public partial class LiveGamePage : ContentPage
             _selectedGameOption = value;
             SelectedGame = value?.Game;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedGameDisplay));
         }
     }
 
@@ -69,11 +74,49 @@ public partial class LiveGamePage : ContentPage
         }
     }
 
+    private PlayerItem? _selectedOnCourtPlayer;
+    public PlayerItem? SelectedOnCourtPlayer
+    {
+        get => _selectedOnCourtPlayer;
+        set
+        {
+            _selectedOnCourtPlayer = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanSubstitute));
+            RefreshFilteredBenchPlayers();
+        }
+    }
+
+    private void RefreshFilteredBenchPlayers()
+    {
+        FilteredBenchPlayers.Clear();
+        if (_selectedOnCourtPlayer is null) return;
+        foreach (var p in BenchPlayers.Where(b => b.TeamId == _selectedOnCourtPlayer.TeamId))
+            FilteredBenchPlayers.Add(p);
+        // Clear bench selection if it no longer belongs to the filtered list
+        if (_selectedBenchPlayer is not null && _selectedBenchPlayer.TeamId != _selectedOnCourtPlayer.TeamId)
+            SelectedBenchPlayer = null;
+    }
+
+    private PlayerItem? _selectedBenchPlayer;
+    public PlayerItem? SelectedBenchPlayer
+    {
+        get => _selectedBenchPlayer;
+        set
+        {
+            _selectedBenchPlayer = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanSubstitute));
+        }
+    }
+
     public bool GameSelected => _selectedGame is not null;
+    public string SelectedGameDisplay => _selectedGameOption?.DisplayText ?? "No game selected";
     public bool PlayerSelected => _selectedPlayer is not null;
     public bool SelectedGameInSession => _selectedGame is not null && IsGameInSession(_selectedGame.Status);
     public bool CanUndo => _undoStack.Count > 0;
     public bool CanSave => _selectedPlayer is not null && _selectedGame is not null && !IsWorking;
+    public bool CanSubstitute => _selectedGame is not null && _selectedOnCourtPlayer is not null && _selectedBenchPlayer is not null && !IsWorking;
 
     private bool _hasGameInSession;
     public bool HasGameInSession
@@ -84,10 +127,12 @@ public partial class LiveGamePage : ContentPage
             _hasGameInSession = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(NoGameInSession));
+            OnPropertyChanged(nameof(ShowNoGameInSessionMessage));
         }
     }
 
     public bool NoGameInSession => !HasGameInSession;
+    public bool ShowNoGameInSessionMessage => NoGameInSession && !GameSelected;
 
     private string _liveStateMessage = "Checking live game status...";
     public string LiveStateMessage
@@ -108,6 +153,7 @@ public partial class LiveGamePage : ContentPage
             _isWorking = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanSave));
+            OnPropertyChanged(nameof(CanSubstitute));
         }
     }
 
@@ -294,6 +340,12 @@ public partial class LiveGamePage : ContentPage
 
     private async void OnGamePickerChanged(object sender, EventArgs e)
     {
+        if (sender is Picker picker && picker.SelectedItem is GamePickerItem selected)
+        {
+            // Ensure selection is synchronized even if event fires before binding updates.
+            SelectedGameOption = selected;
+        }
+
         if (_selectedGame is null)
         {
             return;
@@ -304,16 +356,42 @@ public partial class LiveGamePage : ContentPage
             IsWorking = true;
 
             var allPlayers = await _db.GetPlayersAsync();
-            var gamePlayers = allPlayers
+            var homeStarterIds = (await _db.GetTeamStarterIdsAsync(_selectedGame.HomeTeamId)).ToHashSet();
+            var awayStarterIds = (await _db.GetTeamStarterIdsAsync(_selectedGame.AwayTeamId)).ToHashSet();
+
+            var eligiblePlayers = allPlayers
                 .Where(p => p.TeamId == _selectedGame.HomeTeamId || p.TeamId == _selectedGame.AwayTeamId)
                 .OrderBy(p => p.TeamId)
                 .ThenBy(p => p.JerseyNumber)
+                .ThenBy(p => p.LastName)
+                .ToList();
+
+            var configuredStarterIds = homeStarterIds.Union(awayStarterIds).ToHashSet();
+
+            List<PlayerItem> gamePlayers;
+            if (configuredStarterIds.Count == 0)
+            {
+                gamePlayers = eligiblePlayers;
+            }
+            else
+            {
+                gamePlayers = eligiblePlayers.Where(p => configuredStarterIds.Contains(p.PlayerId)).ToList();
+            }
+
+            var benchPlayers = eligiblePlayers
+                .Where(p => !gamePlayers.Any(gp => gp.PlayerId == p.PlayerId))
                 .ToList();
 
             GamePlayers.Clear();
             foreach (var player in gamePlayers)
             {
                 GamePlayers.Add(player);
+            }
+
+            BenchPlayers.Clear();
+            foreach (var player in benchPlayers)
+            {
+                BenchPlayers.Add(player);
             }
 
             var teams = await _db.GetTeamsAsync();
@@ -323,7 +401,10 @@ public partial class LiveGamePage : ContentPage
             await RefreshScoresAsync();
 
             SelectedPlayer = null;
-            StatusMessage = $"Game loaded: {gamePlayers.Count} players available.";
+            SelectedOnCourtPlayer = null;
+            SelectedBenchPlayer = null;
+            var benchNote = benchPlayers.Count > 0 ? $", {benchPlayers.Count} on bench" : string.Empty;
+            StatusMessage = $"Game loaded: {gamePlayers.Count} active players{benchNote}.";
         }
         catch (Exception ex)
         {
@@ -344,15 +425,100 @@ public partial class LiveGamePage : ContentPage
         }
 
         var stats = await _db.GetStatsByGameAsync(_selectedGame.GameId);
-        var players = GamePlayers.ToList();
+        var players = GamePlayers.Concat(BenchPlayers).DistinctBy(p => p.PlayerId).ToList();
 
-        HomeScore = stats
+        var persistedHome = stats
             .Where(s => players.Any(p => p.PlayerId == s.PlayerId && p.TeamId == _selectedGame.HomeTeamId))
             .Sum(s => s.TotalPoints);
 
-        AwayScore = stats
+        var persistedAway = stats
             .Where(s => players.Any(p => p.PlayerId == s.PlayerId && p.TeamId == _selectedGame.AwayTeamId))
             .Sum(s => s.TotalPoints);
+
+        // Keep in-memory point taps visible even before Save.
+        var pendingPoints = (_twoPtMade * 2) + (_threePtMade * 3);
+        if (_selectedPlayer is not null)
+        {
+            if (_selectedPlayer.TeamId == _selectedGame.HomeTeamId)
+            {
+                persistedHome += pendingPoints;
+            }
+            else if (_selectedPlayer.TeamId == _selectedGame.AwayTeamId)
+            {
+                persistedAway += pendingPoints;
+            }
+        }
+
+        HomeScore = persistedHome;
+        AwayScore = persistedAway;
+    }
+
+    private async void OnSubstituteClicked(object sender, EventArgs e)
+    {
+        if (!CanSubstitute || _selectedOnCourtPlayer is null || _selectedBenchPlayer is null)
+        {
+            return;
+        }
+
+        if (_selectedOnCourtPlayer.TeamId != _selectedBenchPlayer.TeamId)
+        {
+            await DisplayAlert("Substitution", "Players must be on the same team to substitute.", "OK");
+            return;
+        }
+
+        var onCourt = _selectedOnCourtPlayer;
+        var bench = _selectedBenchPlayer;
+
+        GamePlayers.Remove(onCourt);
+        BenchPlayers.Remove(bench);
+
+        InsertSorted(GamePlayers, bench);
+        InsertSorted(BenchPlayers, onCourt);
+
+        if (_selectedPlayer?.PlayerId == onCourt.PlayerId)
+        {
+            SelectedPlayer = null;
+        }
+
+        SelectedOnCourtPlayer = null;
+        SelectedBenchPlayer = null;
+
+        StatusMessage = $"Substitution: {onCourt.FullName} out, {bench.FullName} in.";
+        await RefreshScoresAsync();
+    }
+
+    private static void InsertSorted(ObservableCollection<PlayerItem> target, PlayerItem player)
+    {
+        var index = 0;
+        while (index < target.Count)
+        {
+            var current = target[index];
+            var teamCompare = current.TeamId.CompareTo(player.TeamId);
+            if (teamCompare > 0)
+            {
+                break;
+            }
+
+            if (teamCompare == 0)
+            {
+                var currentJersey = current.JerseyNumber ?? int.MaxValue;
+                var playerJersey = player.JerseyNumber ?? int.MaxValue;
+                var jerseyCompare = currentJersey.CompareTo(playerJersey);
+                if (jerseyCompare > 0)
+                {
+                    break;
+                }
+
+                if (jerseyCompare == 0 && string.Compare(current.LastName, player.LastName, StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    break;
+                }
+            }
+
+            index++;
+        }
+
+        target.Insert(index, player);
     }
 
     private void On2ptMadeClicked(object sender, EventArgs e) =>

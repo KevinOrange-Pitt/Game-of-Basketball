@@ -32,14 +32,21 @@
                     <Picker Title="-- Pick a game --"
                             ItemsSource="{Binding GameOptions}"
                             ItemDisplayBinding="{Binding DisplayText}"
+                            TextColor="#172A45"
+                            TitleColor="#6B7D94"
                             SelectedItem="{Binding SelectedGameOption}"
                             SelectedIndexChanged="OnGamePickerChanged" />
 
-                                <Label Text="No game is currently in session. You can still select a game."
+                          <Label Text="{Binding SelectedGameDisplay}"
+                              FontSize="13"
+                              FontAttributes="Bold"
+                              TextColor="#172A45" />
+
+                          <Label Text="No game is currently in session. You can still select a game."
                            FontSize="13"
                            FontAttributes="Bold"
                            TextColor="#8A2734"
-                           IsVisible="{Binding NoGameInSession}" />
+                              IsVisible="{Binding ShowNoGameInSessionMessage}" />
 
                     <Border StrokeThickness="0"
                             BackgroundColor="#13203A"
@@ -68,9 +75,36 @@
                     <Label Text="Select Player" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
                     <Picker Title="-- Pick a player --"
                             ItemsSource="{Binding GamePlayers}"
-                            ItemDisplayBinding="{Binding FullName}"
+                            ItemDisplayBinding="{Binding PickerDisplay}"
                             SelectedItem="{Binding SelectedPlayer}" />
                     <Label Text="{Binding SelectedPlayerDisplay}" TextColor="#1F3C66" FontSize="13" FontAttributes="Bold" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border StrokeThickness="0" BackgroundColor="#F9FBFF" Padding="14" StrokeShape="RoundRectangle 14" IsVisible="{Binding GameSelected}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Substitutions" FontSize="16" FontAttributes="Bold" TextColor="#172A45" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Picker Grid.Column="0"
+                                Title="On court"
+                                ItemsSource="{Binding GamePlayers}"
+                                ItemDisplayBinding="{Binding PickerDisplay}"
+                            TextColor="#172A45"
+                            TitleColor="#6B7D94"
+                                SelectedItem="{Binding SelectedOnCourtPlayer}" />
+                        <Picker Grid.Column="1"
+                                Title="Bench"
+                                ItemsSource="{Binding FilteredBenchPlayers}"
+                                ItemDisplayBinding="{Binding PickerDisplay}"
+                            TextColor="#172A45"
+                            TitleColor="#6B7D94"
+                                SelectedItem="{Binding SelectedBenchPlayer}" />
+                    </Grid>
+                    <Button Text="Substitute"
+                            Clicked="OnSubstituteClicked"
+                            IsEnabled="{Binding CanSubstitute}"
+                            BackgroundColor="#2563EB"
+                            TextColor="White" />
                 </VerticalStackLayout>
             </Border>
 

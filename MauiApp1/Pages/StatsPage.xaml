@@ -38,8 +38,15 @@
                             <Picker Title="-- Pick a game --"
                                     ItemsSource="{Binding GameOptions}"
                                     ItemDisplayBinding="{Binding DisplayText}"
+                                    TextColor="#172A45"
+                                    TitleColor="#6B7D94"
                                     SelectedItem="{Binding SelectedGameOption}"
                                     SelectedIndexChanged="OnGamePickerChanged" />
+
+                                <Label Text="{Binding SelectedGameDisplay}"
+                                   FontSize="13"
+                                   FontAttributes="Bold"
+                                   TextColor="#172A45" />
                         </VerticalStackLayout>
 
                         <Button Grid.Column="1"
@@ -89,7 +96,7 @@
                            FontSize="13"
                            FontAttributes="Bold"
                            TextColor="#8A2734"
-                           IsVisible="{Binding NoGameInSession}" />
+                              IsVisible="{Binding ShowNoGameInSessionMessage}" />
                 </VerticalStackLayout>
             </Border>
 

@@ -22,7 +22,18 @@ public class PlayerItem
     public DateTime CreatedAt { get; set; }
     public string FullName => $"{FirstName} {LastName}".Trim();
     public string TeamDisplay => string.IsNullOrWhiteSpace(TeamName) ? $"Team {TeamId}" : TeamName;
-    public string Display => $"#{PlayerId} {FullName} (Team {TeamId})";
+    public string Display
+    {
+        get
+        {
+            var label = $"{(JerseyNumber.HasValue ? $"#{JerseyNumber.Value} " : string.Empty)}{FullName}".Trim();
+            return string.IsNullOrWhiteSpace(label) ? $"Player {PlayerId}" : label;
+        }
+    }
+
+    public string PickerDisplay => $"[{TeamDisplay}] {Display}";
+
+    public override string ToString() => Display;
 }
 
 public class GameItem
@@ -78,4 +89,7 @@ public class GamePickerItem
 {
     public GameItem? Game { get; set; }
     public string DisplayText { get; set; } = string.Empty;
+
+    // Fallback text rendering for Picker selected value on platforms that prefer ToString().
+    public override string ToString() => DisplayText;
 }
